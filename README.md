@@ -291,6 +291,19 @@ AI 出提案，你按确认键。判断标准：**这个动作如果错了，撤
 
 **一句话：AI 可以无限地"想"和"建议"，但凡要"落地动手"，停在你这道闸前。**
 
+### 本地环境约定（本机，不影响他人）
+
+- **ASR（`tools/extract-video-asr.py`）用专用环境**：`.venv-asr`（Python 3.11 + faster-whisper + yt-dlp），已进 `.gitignore`。
+  系统 conda 里是 Python 3.13 且没装 `faster_whisper`/`ctranslate2`，直接跑会 `ModuleNotFoundError`。
+  ```bash
+  .venv-asr\Scripts\python.exe tools\extract-video-asr.py <视频URL>
+  ```
+- **模型必须走本地快照**：默认 `large-v3`，由 `resolve_model_dir()` 解析成
+  `E:\data\models\HuggingFace\hub\models--Systran--faster-whisper-large-v3` 的 snapshot 目录再传给 `WhisperModel`。
+  只写模型名仍会联网校验；`large-v3-turbo` 的上游仓库已私有化，按名字加载会 401。
+- **git 推送走 Windows 侧**：WSL 里 `~/.ssh` 为空，`git push` 会卡在 publickey 等待。
+  在 Windows 终端（或 `cmd.exe /c "cd /d E:\Projects\personal\WebNote-Workflow && git push"`）执行，密钥在 `C:\Users\stars\.ssh`。
+
 ### 参考
 
 - 设计参考：[Agent OS 的第一课：会分工，才会用 Agent](https://www.axtonliu.ai/newsletters/ai-2/posts/agent-os-workstation-division)
