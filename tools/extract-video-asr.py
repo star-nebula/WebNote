@@ -6,10 +6,17 @@ Agent 0 · 采编 - 视频 ASR 转写工具
 适用于页面文本不足、需要视频实际语音内容的场景。
 
 用法：
-  python extract-video-asr.py <视频URL> [--model small|medium|large-v3-turbo] [--max-duration <分钟>]
+  python extract-video-asr.py <视频URL> [--model small|medium|large-v3|large-v3-turbo] [--max-duration <分钟>]
 
-依赖：pip install yt-dlp faster-whisper
-      ffmpeg（已安装）
+依赖：ffmpeg（已安装）+ 本仓库专用虚拟环境 .venv-asr（Python 3.11）
+      创建：C:\Users\stars\AppData\Local\Programs\Python\Python311\python.exe -m venv .venv-asr
+            .venv-asr\Scripts\python.exe -m pip install faster-whisper yt-dlp
+      运行：.venv-asr\Scripts\python.exe tools\extract-video-asr.py <视频URL>
+
+模型：默认 large-v3，加载的是本机离线快照
+      E:\data\models\HuggingFace\hub\models--Systran--faster-whisper-large-v3
+      （由 resolve_model_dir() 解析成目录路径传给 WhisperModel，不触网、不会 401）
+      large-v3-turbo 的上游仓库已私有化，按名字加载会联网并 401，不要当默认值。
 
 输出 JSON 到 stdout：
   {"success": true, "text": "...", "char_count": N, "method": "faster-whisper-<model>", "error": null}
@@ -130,18 +137,54 @@ def prepare_audio_local(path, tmpdir):
         return None, f'本地音频准备失败: {e}'
 
 
-def transcribe_audio(audio_path, model_name='large-v3-turbo', language='zh'):
+# 本地模型缓存候选根（按优先级）。HF 仓库名 -> 缓存目录名：把 '/' 换成 '--'
+_HF_CACHE_ROOTS = [
+    os.environ.get('HF_HOME'),
+    r'E:\data\models\HuggingFace',
+    os.path.expanduser('~/.cache/huggingface'),
+]
+
+
+def resolve_model_dir(model_name):
+    """把模型名解析成已下载的本地快照目录；找不到就原样返回名字（退回联网下载）。
+
+    背景：large-v3-turbo 的上游仓库（mobiuslabsgmbh/faster-whisper-large-v3-turbo）已私有化，
+    按名字加载会联网并 401。本机缓存里已有 Systran/faster-whisper-large-v3 的完整快照，
+    直接指向该目录即可离线加载，不触网、不会 401。
     """
-    用 faster-whisper 转写音频，返回文本。
-    首次运行会自动下载模型（large-v3-turbo ~800MB）。
+    if os.path.isdir(model_name):
+        return model_name
+    repo = model_name if '/' in model_name else f'Systran/faster-whisper-{model_name}'
+    cache_name = 'models--' + repo.replace('/', '--')
+    for root in _HF_CACHE_ROOTS:
+        if not root:
+            continue
+        snaps = os.path.join(root, 'hub', cache_name, 'snapshots')
+        if not os.path.isdir(snaps):
+            continue
+        for name in sorted(os.listdir(snaps), reverse=True):
+            path = os.path.join(snaps, name)
+            if os.path.isfile(os.path.join(path, 'model.bin')):
+                return path
+    return model_name
+
+
+def transcribe_audio(audio_path, model_name='large-v3', language='zh'):
+    """用 faster-whisper 转写音频，返回文本。
+
+    默认 large-v3：本机已有离线快照，走本地目录加载。首次换成未缓存的模型才会联网下载。
     """
-    log(f'加载模型: {model_name}（首次运行需下载，请耐心等待）')
+    model_ref = resolve_model_dir(model_name)
+    if model_ref == model_name:
+        log(f'加载模型: {model_name}（本地未找到快照，将联网下载）')
+    else:
+        log(f'加载模型: {model_name}（本地快照 {model_ref}）')
     try:
         from faster_whisper import WhisperModel
 
         # CPU 模式：int8 量化，省内存
         model = WhisperModel(
-            model_name,
+            model_ref,
             device='cpu',
             compute_type='int8',
         )
@@ -192,9 +235,9 @@ def main():
     )
     parser.add_argument(
         '--model',
-        default='large-v3-turbo',
+        default='large-v3',
         choices=['small', 'medium', 'large-v3', 'large-v3-turbo'],
-        help='ASR 模型（默认 large-v3-turbo，small 最快但精度低）',
+        help='ASR 模型（默认 large-v3，本机有离线快照；small 最快但精度低；large-v3-turbo 上游仓库已私有化，按名字加载会 401，不建议）',
     )
     parser.add_argument(
         '--max-duration',

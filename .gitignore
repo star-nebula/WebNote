@@ -21,3 +21,6 @@ __pycache__/
 *.env
 .env
 .secrets
+
+# ASR 专用虚拟环境（本地，不入库）
+.venv-asr/
