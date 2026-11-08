@@ -84,7 +84,15 @@ const BLOCK_TAGS = new Set(['P','H1','H2','H3','H4','H5','H6','LI','BLOCKQUOTE',
 
 ```powershell
 powershell -File harvest.ps1 -Url "https://xxx.feishu.cn/docx/XXX" -Prefix fs1 `
-  -ArticleSelector "[data-block-type], .docx-page-block" -OrderAttr "data-record-id"
+  -Adapter feishu
+```
+
+默认飞书适配器使用 `data-block-id` + `data-block-type`，正文容器优先 `.docx-page-block / main / [role=main] / article`。若实测属性不同，再用 `-BlockIdAttr`、`-BlockTypeAttr`、`-ArticleSelector` 覆盖。没有可靠顺序键时按“窗口 + 窗内 DOM 位置”保序。
+
+普通 HTML 防复制页使用：
+
+```powershell
+powershell -File harvest.ps1 -Url "https://example.com/a" -Prefix html1 -Adapter generic
 ```
 
 > 若飞书探针显示 `hasBlockModel = false`，说明它把内容画在 `<canvas>` 里

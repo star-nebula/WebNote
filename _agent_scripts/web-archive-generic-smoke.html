@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>Generic DOM Smoke Test</title>
+  <style>body{user-select:none}</style>
+</head>
+<body>
+  <article>
+    <h1>普通防复制页面</h1>
+    <p>DOM 读取不依赖选择和剪贴板。</p>
+    <ul>
+      <li>第一项</li>
+      <li><strong>第二项</strong></li>
+    </ul>
+    <blockquote>普通 HTML 引用。</blockquote>
+    <pre><code class="language-haskell">main = putStrLn "generic-ok"</code></pre>
+    <div class="mermaid" data-mermaid-src="sequenceDiagram;A-&gt;&gt;B: ok"></div>
+    <table>
+      <tr><th>列 A</th><th colspan="2">列 B</th></tr>
+      <tr><td rowspan="2">跨行</td><td>一</td><td>二</td></tr>
+      <tr><td>三</td><td>四</td></tr>
+    </table>
+  </article>
+</body>
+</html>

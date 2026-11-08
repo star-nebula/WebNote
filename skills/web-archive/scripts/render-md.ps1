@@ -117,10 +117,27 @@ foreach ($b in $blocks) {
   }
 
   # --- 代码块 ---
+  if ($ty -eq 'mermaid') {
+    $source = [string]$b.mermaid
+    if ([string]::IsNullOrWhiteSpace($source)) { $source = [string]$b.text }
+    if (-not [string]::IsNullOrWhiteSpace($source)) {
+      $lines.Add(''); $lines.Add('```mermaid')
+      foreach ($srcLine in ($source -split '\r?\n')) { $lines.Add($srcLine) }
+      $lines.Add('```'); $lines.Add('')
+      $stats.codes++
+    } elseif ($b.imgSrc) {
+      $lines.Add(''); $lines.Add('![](' + [string]$b.imgSrc + ')')
+      $lines.Add('> Mermaid 源码未在 DOM 中暴露，以上为渲染图。')
+      $stats.images++
+    }
+    $prevWasList = $false; $prevWasCode = $true
+    continue
+  }
+
+  # --- 代码块 ---
   if ($ty -eq 'codeblock') {
-    $lang = ''
-    $known = @('python','py','yaml','yml','json','java','js','javascript','ts','typescript','bash','sh','shell','sql','html','css','xml','go','rust','c','cpp','php','ruby','kotlin','swift','text','plaintext','diff','ini','toml','dockerfile','makefile','nginx','powershell','ps1')
-    if ($b.lang -and ($known -contains ([string]$b.lang).ToLower())) { $lang = ([string]$b.lang).ToLower() }
+    $lang = ([string]$b.lang).Trim().ToLower()
+    $lang = $lang -replace '[^a-z0-9_+.-]', ''
 
     $codeLines = @($b.lines)
     # 剥离纯行号行（很多编辑器把它渲染成独立行）
@@ -144,20 +161,32 @@ foreach ($b in $blocks) {
     if ($t -and @($t.rows).Count -gt 0) {
       $lines.Add('')
       $rows = @($t.rows)
-      $hdr = @($rows[0])
-      $hdrCells = foreach ($c in $hdr) {
-        $runs0 = if ($c.runs -and @($c.runs).Count -gt 0) { @($c.runs[0]) } else { @() }
-        (Convert-Runs $runs0 $true -SuppressBold) -replace "`n", '<br>'
-      }
-      $lines.Add('| ' + ($hdrCells -join ' | ') + ' |')
-      $lines.Add('| ' + ((@($hdr) | ForEach-Object { '---' }) -join ' | ') + ' |')
-      foreach ($row in @($rows | Select-Object -Skip 1)) {
-        $cells = foreach ($c in @($row)) {
-          $parts = foreach ($pr in @($c.runs)) {
-            ((Convert-Runs @($pr) $true) -replace "`n", '<br>')
+      $grid = @{}
+      $maxCols = 0
+      for ($ri = 0; $ri -lt $rows.Count; $ri++) {
+        $ci = 0
+        foreach ($cell in @($rows[$ri])) {
+          while ($grid.ContainsKey("${ri}:${ci}")) { $ci++ }
+          $parts = foreach ($part in @($cell.runs)) {
+            ((Convert-Runs @($part) $true -SuppressBold:($ri -eq 0)) -replace "`n", '<br>')
           }
-          ($parts -join '<br>')
+          $content = ($parts -join '<br>')
+          $rowSpan = [Math]::Max(1, [int]($cell.rs))
+          $colSpan = [Math]::Max(1, [int]($cell.cs))
+          for ($rr = 0; $rr -lt $rowSpan; $rr++) {
+            for ($cc = 0; $cc -lt $colSpan; $cc++) {
+              $grid["$($ri + $rr):$($ci + $cc)"] = $content
+            }
+          }
+          $ci += $colSpan
+          if ($ci -gt $maxCols) { $maxCols = $ci }
         }
+      }
+      $header = for ($c = 0; $c -lt $maxCols; $c++) { [string]$grid["0:$c"] }
+      $lines.Add('| ' + ($header -join ' | ') + ' |')
+      $lines.Add('| ' + ((1..$maxCols | ForEach-Object { '---' }) -join ' | ') + ' |')
+      for ($r = 1; $r -lt $rows.Count; $r++) {
+        $cells = for ($c = 0; $c -lt $maxCols; $c++) { [string]$grid["${r}:${c}"] }
         $lines.Add('| ' + ($cells -join ' | ') + ' |')
       }
       $stats.tables++
@@ -170,7 +199,7 @@ foreach ($b in $blocks) {
   $inline = Convert-Runs @($b.runs)
   if ([string]::IsNullOrWhiteSpace($inline)) { $prevWasList = $false; continue }
 
-  $isQuote = ($b.q -eq 1)
+  $isQuote = ($b.q -eq 1 -or $ty -eq 'quote')
 
   if ($isQuote) {
     $sub = $inline -split "`n"

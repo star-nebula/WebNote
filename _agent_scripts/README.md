@@ -68,9 +68,24 @@ python _agent_scripts/move-definitions-to-root.py
 
 ## web-archive-smoke.html
 
-`web-archive` 迁移与回归用的本地夹具，覆盖标题、段落、引用、围栏代码块和行内加粗。它不访问网络，也不会写入业务目录。
+`web-archive` 迁移与回归用的本地夹具。主夹具覆盖标题、段落、引用、未知语言代码块、合并单元格和 Mermaid；另有飞书、普通 HTML 与登录墙夹具。它们不访问网络，也不会写入业务目录。
 
-使用方式：以 CDP 调试模式启动 Chrome/Edge，打开该文件的 `file:///` URL，再依次调用 `skills/web-archive/scripts/` 下的 `harvest.ps1`、`merge-blocks.ps1`、`render-md.ps1`。输出应保留阅读顺序、引用、代码语言与行内样式。
+运行全部回归：
+
+```powershell
+powershell -File _agent_scripts/test-web-archive.ps1
+```
+
+测试会自动启动隐藏的 headless Edge/Chrome，验证钉钉、飞书、普通 HTML、登录墙、合并单元格、未知代码语言和 Mermaid 源码，并在结束时清理临时目录。
+
+## offline-workbuddy-web-archive.py
+
+把已迁移的 `web-archive-expert` 从 WorkBuddy 的自定义专家、marketplace 和最近专家索引中移除，同时保留插件目录与修改前备份用于回滚。
+
+```powershell
+python _agent_scripts/offline-workbuddy-web-archive.py
+python _agent_scripts/offline-workbuddy-web-archive.py --apply
+```
 
 ---
 

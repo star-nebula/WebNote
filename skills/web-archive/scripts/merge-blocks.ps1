@@ -60,10 +60,17 @@ foreach ($f in $files) {
   foreach ($t in @($j.tables)) { if ($t.u) { $tableMap[$t.u] = $t } }
 }
 
-# 按顺序键重排；无顺序键的排在最后（保持相对稳定）
-$sortExpr = { if ($_.k -ge 0) { [int]$_.k } else { [int]::MaxValue } }
-$blocks   = @($blockMap.Values | Sort-Object -Property $sortExpr)
-$tables   = @($tableMap.Values | Sort-Object -Property $sortExpr)
+# 有顺序键时按真实顺序；无顺序键时按“窗口 + 窗内位置”保持采集顺序
+$blocks = @($blockMap.Values | Sort-Object -Property `
+  @{ Expression = { if ($_.k -ge 0) { 0 } else { 1 } } }, `
+  @{ Expression = { if ($_.k -ge 0) { [int]$_.k } else { 0 } } }, `
+  @{ Expression = { if ($null -ne $_.w) { [int]$_.w } else { 0 } } }, `
+  @{ Expression = { if ($null -ne $_.i) { [int]$_.i } else { 0 } } })
+$tables = @($tableMap.Values | Sort-Object -Property `
+  @{ Expression = { if ($_.k -ge 0) { 0 } else { 1 } } }, `
+  @{ Expression = { if ($_.k -ge 0) { [int]$_.k } else { 0 } } }, `
+  @{ Expression = { if ($null -ne $_.w) { [int]$_.w } else { 0 } } }, `
+  @{ Expression = { if ($null -ne $_.i) { [int]$_.i } else { 0 } } })
 
 Write-Host "[merge] 去重后: blocks=$($blocks.Count)  tables=$($tables.Count)  (跳过窗口 $skipped)"
 

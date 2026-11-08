@@ -21,6 +21,8 @@
 
 加载 `skills/web-archive/SKILL.md`，按其页面判定、DOM 探针、分窗采集、合并去重、Markdown 渲染与抽样校验流程执行。
 
+适配器：`dingtalk`、`feishu`、`generic`。`auto` 只按常见域名判断；未知站点先跑 DOM 探针，不要直接假定块属性。
+
 ## 落库规则
 
 - 原样存档：`E:\knowledge\Resources\<主题>\<来源>\`
@@ -34,3 +36,4 @@
 2. 标题层级、列表、引用、表格行列、代码块语言和阅读顺序保留；
 3. 报告窗口数、块数、表格数、图片数、代码块数与保存路径；
 4. 任何漏采、降级或未验证站点必须显式说明。
+5. 修改脚本后运行 `powershell -File _agent_scripts/test-web-archive.ps1`；测试覆盖钉钉、飞书、普通 HTML、登录墙、合并单元格、未知代码语言和 Mermaid。

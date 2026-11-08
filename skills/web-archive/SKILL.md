@@ -48,7 +48,9 @@ agent_created: true
 
 | 类型 | 走法 |
 |---|---|
-| 云文档 / 长文档 | 全流水线（Step 1 → 5） |
+| 钉钉云文档 / 长文档 | `-Adapter dingtalk`，全流水线（Step 1 → 5） |
+| 飞书云文档 | 先探针，使用 `-Adapter feishu`，再跑全流水线 |
+| 普通防复制 HTML | 使用 `-Adapter generic`，按语义标签生成稳定块 ID |
 | 短的单视图页 | 跳过分窗，直接单次抽取 + 渲染 |
 | 未知新站点 | **先跑探针**（Step 1.5），确认块模型后再开采 |
 
@@ -75,8 +77,16 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/cdp.ps1 `
 ```powershell
 # 长文档：分窗滚动采集
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/harvest.ps1 `
-  -Url "https://alidocs.dingtalk.com/i/nodes/<NODE>" -Prefix "doc1" -Port 9333
+  -Url "https://alidocs.dingtalk.com/i/nodes/<NODE>" -Prefix "doc1" -Port 9333 -Adapter dingtalk
 # 产物：work/<Prefix>_w1.json, _w2.json, ...（每窗一个，含全部顶层块）
+
+# 飞书
+powershell -File scripts/harvest.ps1 `
+  -Url "https://xxx.feishu.cn/docx/<TOKEN>" -Prefix fs1 -Adapter feishu
+
+# 普通 HTML 防复制页
+powershell -File scripts/harvest.ps1 `
+  -Url "https://example.com/article" -Prefix html1 -Adapter generic
 ```
 
 ### Step 3 · 合并去重
@@ -96,6 +106,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/render-md.ps1 `
 - 抽样比对：**首段 / 中段 / 末段**各一处；核对表格行列数、代码块数量
 - 报告统计：窗口数、块数、表格数、图片数、代码块数
 - 交付时写明保存路径；**有任何漏采或降级必须显式说明**
+- 自动化回归：`powershell -File _agent_scripts/test-web-archive.ps1`
 
 ## 输出契约
 
@@ -110,6 +121,12 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/render-md.ps1 `
 然后按块渲染：`heading-N`→`#`~`######`、列表→`-`/`1.`、引用→`>`、表格→Markdown 表、代码块→围栏（带语言）、图片→`![]()`、分割线→`---`。
 
 **顺序必须是阅读顺序，不是采集顺序。**
+
+- 合并单元格按 `rowSpan/colSpan` 展开并复制内容。
+- 未知代码语言保留原语言标识；空语言才输出无标注围栏。
+- Mermaid 优先读取 `data-mermaid-src`、`data-mermaid`、`.mermaid` 或 `code.language-mermaid` 源码；只有渲染图时明确降级。
+- `auto` 按 URL 选择 `dingtalk` / `feishu` / `generic`；未知站点仍应先探针。
+- 连续 `MaxStalledWindows` 个窗口无进展、连续空抽取或登录墙会停止，避免 400 窗空转。
 
 ## References
 

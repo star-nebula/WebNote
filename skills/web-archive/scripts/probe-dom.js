@@ -15,7 +15,7 @@
     for (const f of frames) {
       try {
         const d = f.contentDocument;
-        if (d && (d.querySelector('article') || d.querySelector('[data-block-uuid]'))) {
+        if (d && (d.querySelector('article, main, [role="main"], [data-block-uuid], [data-block-id], [data-block-type]'))) {
           return { doc: d, inFrame: true };
         }
       } catch (e) { /* 跨域 iframe 读不到 contentDocument，正常 */ }
@@ -30,6 +30,8 @@
     'article.body-editor-content',
     'article',
     '[data-block-uuid]',
+    '[data-block-id]',
+    '[data-block-type]',
     'main',
     '[role="main"]',
     '.doc-content',
@@ -56,13 +58,17 @@
   }
 
   // ---- 3. 块模型统计 ----
-  const blockSel = '[data-block-uuid]';
-  const allBlocks = Array.from(art.querySelectorAll(blockSel));
+  const blockSelectors = ['[data-block-uuid]', '[data-block-id]', '[data-block-type]'];
+  const blockSel = blockSelectors.find(sel => art.querySelector(sel)) || '';
+  const allBlocks = blockSel ? Array.from(art.querySelectorAll(blockSel)) : [];
+  out.blockSelector = blockSel || null;
   out.hasBlockModel = allBlocks.length > 0;
+  out.genericModelSuggested = !out.hasBlockModel;
   out.totalMatchedBlocks = allBlocks.length;
 
   // 顶层块 = 祖先里没有别的「真块」（有 data-type 的才算真块）
-  const isRealBlock = el => el && el.getAttribute && el.getAttribute('data-type');
+  const typeAttr = art.querySelector('[data-block-type]') ? 'data-block-type' : 'data-type';
+  const isRealBlock = el => el && el.getAttribute && el.getAttribute(typeAttr);
   const tops = allBlocks.filter(b => {
     let p = b.parentElement;
     while (p && p !== art) {
@@ -75,7 +81,7 @@
 
   const stats = {};
   for (const b of tops) {
-    const t = b.getAttribute('data-type') || b.tagName.toLowerCase();
+    const t = b.getAttribute(typeAttr) || b.tagName.toLowerCase();
     stats[t] = (stats[t] || 0) + 1;
   }
   out.typeStats = stats;
@@ -101,7 +107,8 @@
   out.specials = {
     tables: art.querySelectorAll('table').length,
     images: art.querySelectorAll('img').length,
-    codeContainers: art.querySelectorAll('[data-language], pre').length,
+    codeContainers: art.querySelectorAll('[data-language], pre, .mermaid, [data-mermaid-src]').length,
+    mermaidSources: art.querySelectorAll('[data-mermaid-src], [data-mermaid], code.language-mermaid').length,
     hrs: art.querySelectorAll('hr').length,
     listContainers: art.querySelectorAll('[data-testid="group-list-container"]').length
   };
@@ -112,14 +119,15 @@
     const b = tops.find(pred);
     if (b) samples[name] = b.outerHTML.substring(0, maxLen || 900);
   }
-  sample('heading', b => /heading|title/i.test(b.getAttribute('data-type') || ''), 700);
-  sample('paragraph', b => (b.getAttribute('data-type') || '') === 'paragraph', 700);
+  sample('heading', b => /heading|title/i.test(b.getAttribute(typeAttr) || b.tagName), 700);
+  sample('paragraph', b => /^(text|paragraph|p)$/i.test(b.getAttribute(typeAttr) || b.tagName), 700);
   sample('list', b => {
     const p = b.parentElement;
     return !!(p && p.closest && p.closest('[data-testid="group-list-container"]'));
   }, 700);
   sample('quote', b => b.parentElement && b.parentElement.tagName === 'BLOCKQUOTE', 700);
-  sample('code', b => b.querySelector('[data-language]'), 700);
+  sample('code', b => b.querySelector('[data-language]') || ['PRE','CODE'].includes(b.tagName), 700);
+  sample('mermaid', b => b.matches('.mermaid, [data-mermaid-src], [data-mermaid]') || b.querySelector('.mermaid, [data-mermaid-src], [data-mermaid]'), 700);
   sample('table', b => b.querySelector('table'), 900);
   sample('image', b => b.querySelector('img'), 500);
   out.samples = samples;

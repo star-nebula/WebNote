@@ -36,13 +36,18 @@ param(
   [Parameter(Mandatory=$true)][string]$Url,
   [Parameter(Mandatory=$true)][string]$Prefix,
   [string]$OutDir = "",
-  [string]$ArticleSelector = "article.body-editor-content, article",
-  [string]$OrderAttr = "data-cangjie-key",
+  [ValidateSet('auto','dingtalk','feishu','generic')]
+  [string]$Adapter = 'auto',
+  [string]$ArticleSelector = "",
+  [string]$OrderAttr = "",
+  [string]$BlockIdAttr = "",
+  [string]$BlockTypeAttr = "",
   [int]$Port = 9333,
   [int]$WaitMs = 1400,        # 单窗等待（懒加载），不得低于 1000
   [int]$StepRatioPct = 2,     # 滚动步长 = 容器高度 * 该百分比
   [int]$MinStepPx = 300,
   [int]$MaxWindows = 400,
+  [int]$MaxStalledWindows = 3,
   [switch]$SingleView,
   [switch]$KeepTab
 )
@@ -50,6 +55,30 @@ param(
 $ErrorActionPreference = 'Stop'
 if ($WaitMs -lt 1000) { $WaitMs = 1000 }   # 采集礼貌：不低于 1s
 $CdpPort = $Port
+
+if ($Adapter -eq 'auto') {
+  if ($Url -match 'alidocs\.dingtalk\.com') { $Adapter = 'dingtalk' }
+  elseif ($Url -match 'feishu\.cn|feishu\.com|larksuite\.com') { $Adapter = 'feishu' }
+  else { $Adapter = 'generic' }
+}
+
+if ([string]::IsNullOrWhiteSpace($BlockIdAttr)) {
+  $BlockIdAttr = if ($Adapter -eq 'feishu') { 'data-block-id' } else { 'data-block-uuid' }
+}
+if ([string]::IsNullOrWhiteSpace($BlockTypeAttr)) {
+  $BlockTypeAttr = if ($Adapter -eq 'feishu') { 'data-block-type' } else { 'data-type' }
+}
+if ([string]::IsNullOrWhiteSpace($ArticleSelector)) {
+  $ArticleSelector = switch ($Adapter) {
+    'feishu'  { '.docx-page-block, main, [role="main"], article, body' }
+    'generic' { 'article, main, [role="main"], .doc-content, #content, body' }
+    default   { 'article.body-editor-content, article' }
+  }
+}
+if ([string]::IsNullOrWhiteSpace($OrderAttr) -and $Adapter -eq 'dingtalk') {
+  $OrderAttr = 'data-cangjie-key'
+}
+Write-Host "[harvest] adapter=$Adapter blockId=$BlockIdAttr blockType=$BlockTypeAttr order=$OrderAttr"
 
 if ([string]::IsNullOrWhiteSpace($OutDir)) { $OutDir = Join-Path $PSScriptRoot '..\work' }
 if (-not (Test-Path $OutDir)) { New-Item -ItemType Directory -Path $OutDir -Force | Out-Null }
@@ -63,6 +92,8 @@ $collectJs = @'
 (() => {
   const ART_SEL = __ART_SEL__;
   const ORDER_ATTR = __ORDER_ATTR__;
+  const BLOCK_ID_ATTR = __BLOCK_ID_ATTR__;
+  const BLOCK_TYPE_ATTR = __BLOCK_TYPE_ATTR__;
 
   function findDoc() {
     const frames = document.querySelectorAll('iframe');
@@ -83,14 +114,16 @@ $collectJs = @'
   }
   if (!art) return JSON.stringify({ err: 'no-article' });
 
-  const isBlock = el => el && el.getAttribute && el.getAttribute('data-block-uuid');
+  const blockId = el => el && el.getAttribute && el.getAttribute(BLOCK_ID_ATTR);
+  const blockType = el => el && el.getAttribute && el.getAttribute(BLOCK_TYPE_ATTR);
+  const isBlock = el => !!blockId(el);
 
   // 顶层块：祖先中没有其它「真块」（带 data-type）的块
   function topBlocks() {
-    const all = Array.from(art.querySelectorAll('[data-block-uuid]'));
+    const all = Array.from(art.querySelectorAll('[' + BLOCK_ID_ATTR + ']'));
     return all.filter(b => {
       let p = b.parentElement;
-      while (p && p !== art) { if (isBlock(p) && p.getAttribute('data-type')) return false; p = p.parentElement; }
+      while (p && p !== art) { if (isBlock(p) && blockType(p)) return false; p = p.parentElement; }
       return true;
     });
   }
@@ -104,7 +137,7 @@ $collectJs = @'
         if (n.nodeType === 1) {
           const tag = n.tagName;
           if (tag === 'CODE' || tag === 'IMG' || tag === 'BR') return NodeFilter.FILTER_ACCEPT;
-          if (isBlock(n) && n.getAttribute('data-type')) return NodeFilter.FILTER_REJECT;
+          if (isBlock(n) && blockType(n)) return NodeFilter.FILTER_REJECT;
           return NodeFilter.FILTER_ACCEPT;
         }
         return NodeFilter.FILTER_REJECT;
@@ -151,20 +184,41 @@ $collectJs = @'
 
   // 表格单元格：只取该 td 内的顶层块（避免把嵌套块的文字重复计入）
   function cellRuns(td) {
-    const inner = Array.from(td.querySelectorAll('[data-block-uuid]')).filter(b => {
+    const inner = Array.from(td.querySelectorAll('[' + BLOCK_ID_ATTR + ']')).filter(b => {
       let p = b.parentElement;
-      while (p && p !== td) { if (isBlock(p) && p.getAttribute('data-type')) return false; p = p.parentElement; }
+      while (p && p !== td) { if (isBlock(p) && blockType(p)) return false; p = p.parentElement; }
       return true;
     });
     if (inner.length) return inner.map(b => runsOf(b));
     return [runsOf(td)];
   }
 
+  function mermaidSourceOf(el) {
+    const candidates = [el, ...el.querySelectorAll('[data-mermaid-src], [data-mermaid], .mermaid, code.language-mermaid')];
+    for (const node of candidates) {
+      for (const attr of ['data-mermaid-src', 'data-mermaid', 'data-source']) {
+        const value = node.getAttribute && node.getAttribute(attr);
+        if (value && !/^data:image\//i.test(value)) return value;
+      }
+      if (node.matches && (node.matches('.mermaid') || node.matches('code.language-mermaid'))) {
+        const text = (node.innerText || '').trim();
+        if (text && !/^<svg/i.test(text)) return text;
+      }
+    }
+    return null;
+  }
+
   const tops = topBlocks();
   const blocks = [], tables = [];
 
   for (const b of tops) {
-    const ty = b.getAttribute('data-type') || b.tagName.toLowerCase();
+    let ty = blockType(b) || b.tagName.toLowerCase();
+    ty = String(ty).toLowerCase().replace(/_/g, '-');
+    const headingMatch = ty.match(/^heading-?(\d)$/);
+    if (headingMatch) ty = 'heading-' + headingMatch[1];
+    if (/^(text|paragraph|p)$/.test(ty)) ty = 'paragraph';
+    if (/^(bullet|bullet-list|unordered-list|list)$/.test(ty)) ty = 'list-item';
+    if (/^(ordered|ordered-list|number-list)$/.test(ty)) ty = 'list-item';
 
     // 列表识别：祖先里有 group-list-container，则取符号与缩进
     let li = null, ind = 0;
@@ -182,7 +236,7 @@ $collectJs = @'
 
     const orderRaw = ORDER_ATTR ? b.getAttribute(ORDER_ATTR) : null;
     const entry = {
-      u: b.getAttribute('data-block-uuid'),
+      u: blockId(b),
       k: orderRaw === null ? -1 : parseInt(orderRaw || '-1'),
       ty: ty,
       q: (b.parentElement && b.parentElement.tagName === 'BLOCKQUOTE') ? 1 : 0,
@@ -193,10 +247,15 @@ $collectJs = @'
       text: null
     };
     for (const a of b.attributes) {
-      if (a.name.startsWith('data-') && a.name !== 'data-block-uuid') entry.attrs[a.name] = a.value.substring(0, 80);
+      if (a.name.startsWith('data-') && a.name !== BLOCK_ID_ATTR) entry.attrs[a.name] = a.value.substring(0, 80);
     }
 
-    if (b.querySelector('table')) {
+    const mermaidSource = mermaidSourceOf(b);
+    if (mermaidSource) {
+      entry.ty = 'mermaid';
+      entry.mermaid = mermaidSource;
+      entry.text = mermaidSource;
+    } else if (b.querySelector('table')) {
       const tb = b.querySelector('table');
       const rows = [];
       for (const tr of tb.rows) {
@@ -214,8 +273,8 @@ $collectJs = @'
       entry.trow = rows.length;
       tables.push({ u: entry.u, k: entry.k, rows: rows });
       entry.text = '[TABLE ' + rows.length + 'r]';
-    } else if (b.querySelector('[data-language]')) {
-      const cb = b.querySelector('[data-language]');
+    } else if (b.getAttribute('data-language') || b.querySelector('[data-language]')) {
+      const cb = b.getAttribute('data-language') ? b : b.querySelector('[data-language]');
       entry.ty = 'codeblock';
       entry.lang = cb.getAttribute('data-language') || '';
       const lineEls = cb.querySelectorAll('[class*="line"], .cm-line');
@@ -250,16 +309,218 @@ $collectJs = @'
 })()
 '@
 
+$genericCollectJs = @'
+(() => {
+  const ART_SEL = __ART_SEL__;
+  const ORDER_ATTR = __ORDER_ATTR__;
+  const BLOCK_SELECTOR = 'h1,h2,h3,h4,h5,h6,p,li,blockquote,pre,table,hr,figure,img,.mermaid,[data-mermaid-src],[data-mermaid]';
+
+  function findDoc() {
+    for (const f of document.querySelectorAll('iframe')) {
+      try {
+        const d = f.contentDocument;
+        if (d && d.querySelector('article, main, [role="main"], .doc-content, #content')) return d;
+      } catch (e) {}
+    }
+    return document;
+  }
+  const doc = findDoc();
+  let art = null;
+  for (const s of ART_SEL) {
+    const el = doc.querySelector(s);
+    if (el) { art = el; break; }
+  }
+  if (!art) return JSON.stringify({ err: 'no-article' });
+
+  const semanticBlocks = Array.from(art.querySelectorAll(BLOCK_SELECTOR)).filter(el => {
+    if (el === art) return false;
+    let p = el.parentElement;
+    while (p && p !== art) {
+      if (p.matches && p.matches(BLOCK_SELECTOR)) return false;
+      p = p.parentElement;
+    }
+    return true;
+  });
+
+  function stableId(el) {
+    for (const attr of ['data-block-id', 'data-block-uuid', 'id']) {
+      const value = el.getAttribute && el.getAttribute(attr);
+      if (value) return attr + ':' + value;
+    }
+    const path = [];
+    let node = el;
+    while (node && node !== art) {
+      const parent = node.parentElement;
+      if (!parent) break;
+      path.unshift(Array.prototype.indexOf.call(parent.children, node));
+      node = parent;
+    }
+    return 'dom:' + path.join('.');
+  }
+
+  function pushedRuns(el) {
+    const runs = [];
+    let current = null;
+    const walker = doc.createTreeWalker(el, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT, {
+      acceptNode(node) {
+        if (node.nodeType === Node.TEXT_NODE) return NodeFilter.FILTER_ACCEPT;
+        if (node.nodeType !== Node.ELEMENT_NODE) return NodeFilter.FILTER_REJECT;
+        if (node.matches && node.matches(BLOCK_SELECTOR)) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    while (walker.nextNode()) {
+      const node = walker.currentNode;
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        if (node.tagName === 'BR') {
+          if (current) { runs.push(current); current = null; }
+          runs.push({ br: 1 });
+        } else if (node.tagName === 'IMG') {
+          if (current) { runs.push(current); current = null; }
+          runs.push({ img: node.getAttribute('src') || '' });
+        }
+        continue;
+      }
+      let bold = false, code = false, italic = false, strike = false;
+      for (let p = node.parentElement; p && p !== el.parentElement; p = p.parentElement) {
+        if (p.tagName === 'CODE') code = true;
+        if (p.tagName === 'STRONG' || p.tagName === 'B') bold = true;
+        if (p.tagName === 'EM' || p.tagName === 'I') italic = true;
+        if (p.tagName === 'S' || p.tagName === 'DEL') strike = true;
+        const style = p.style;
+        if (style) {
+          const weight = style.fontWeight;
+          if (weight === 'bold' || weight === 'bolder' || (parseInt(weight) >= 600 && parseInt(weight) <= 900)) bold = true;
+          if (style.fontStyle === 'italic') italic = true;
+          if (String(style.textDecorationLine || style.textDecoration || '').includes('line-through')) strike = true;
+        }
+      }
+      const key = `${bold}|${code}|${italic}|${strike}`;
+      const text = node.textContent;
+      if (current && current._k === key) current.t += text;
+      else {
+        if (current) runs.push(current);
+        current = { t: text, b: bold, c: code, _k: key };
+        if (italic) current.i = 1;
+        if (strike) current.s = 1;
+      }
+    }
+    if (current) runs.push(current);
+    return runs;
+  }
+
+  function mermaidSourceOf(el) {
+    const candidates = [el, ...el.querySelectorAll('[data-mermaid-src], [data-mermaid], .mermaid, code.language-mermaid')];
+    for (const node of candidates) {
+      for (const attr of ['data-mermaid-src', 'data-mermaid', 'data-source']) {
+        const value = node.getAttribute && node.getAttribute(attr);
+        if (value && !/^data:image\//i.test(value)) return value;
+      }
+      if (node.matches && (node.matches('.mermaid') || node.matches('code.language-mermaid'))) {
+        const text = (node.innerText || '').trim();
+        if (text && !/^<svg/i.test(text)) return text;
+      }
+    }
+    return null;
+  }
+
+  const blocks = [], tables = [];
+  for (const el of semanticBlocks) {
+    const tag = el.tagName.toLowerCase();
+    let ty = tag;
+    if (/^h[1-6]$/.test(tag)) ty = 'heading-' + tag.slice(1);
+    else if (tag === 'p') ty = 'paragraph';
+    else if (tag === 'li') ty = 'list-item';
+    else if (tag === 'blockquote') ty = 'quote';
+    else if (tag === 'pre') ty = 'codeblock';
+    else if (tag === 'table') ty = 'table';
+    else if (tag === 'hr') ty = 'hr';
+    else if (tag === 'img' || tag === 'figure') ty = 'image';
+
+    const entry = {
+      u: stableId(el), k: ORDER_ATTR ? parseInt(el.getAttribute(ORDER_ATTR) || '-1') : -1, ty,
+      q: !!(el.closest && el.closest('blockquote')), li: null, ind: 0, attrs: {}, runs: null, text: null
+    };
+    for (const attr of el.attributes) {
+      if (attr.name.startsWith('data-')) entry.attrs[attr.name] = attr.value.substring(0, 120);
+    }
+
+    const mermaid = mermaidSourceOf(el);
+    if (mermaid) {
+      entry.ty = 'mermaid'; entry.mermaid = mermaid; entry.text = mermaid;
+    } else if (ty === 'table') {
+      const table = el.querySelector('table') || el;
+      const rows = [];
+      for (const tr of table.rows) {
+        const cells = [];
+        for (const td of tr.cells) {
+          cells.push({ cs: td.colSpan || 1, rs: td.rowSpan || 1, runs: [pushedRuns(td)] });
+        }
+        rows.push(cells);
+      }
+      entry.trow = rows.length; entry.text = `[TABLE ${rows.length}r]`;
+      tables.push({ u: entry.u, k: entry.k, rows });
+    } else if (ty === 'codeblock') {
+      const code = el.querySelector('code') || el;
+      const className = `${el.className || ''} ${code.className || ''}`;
+      const langMatch = className.match(/language-([A-Za-z0-9_+.-]+)/);
+      entry.lang = el.getAttribute('data-language') || code.getAttribute('data-language') || (langMatch ? langMatch[1] : '');
+      entry.lines = (code.innerText || '').replace(/^\s*\d+\s*$/gm, '').split(/\r?\n/);
+      entry.text = entry.lines.join('\n');
+    } else if (ty === 'image') {
+      const img = el.tagName.toLowerCase() === 'img' ? el : el.querySelector('img');
+      entry.voidType = 'image'; entry.imgSrc = img ? (img.getAttribute('src') || '') : '';
+      entry.text = '[image]';
+    } else if (ty === 'hr') {
+      entry.voidType = 'hr'; entry.text = '[hr]';
+    } else {
+      entry.runs = pushedRuns(el);
+      entry.text = entry.runs.map(run => run.t || (run.img ? '[IMG]' : run.br ? '\n' : '')).join('');
+    }
+
+    if (ty === 'list-item') {
+      const list = el.closest('ul,ol');
+      entry.li = list && list.tagName === 'OL' ? '1.' : '•';
+      let depth = 0;
+      for (let p = el.parentElement; p && p !== art; p = p.parentElement) if (p.matches && p.matches('ul,ol')) depth++;
+      entry.ind = depth * 12;
+    }
+    blocks.push(entry);
+  }
+
+  let scroll = null;
+  for (const div of doc.querySelectorAll('div,main')) {
+    if (div.scrollHeight - div.clientHeight > 500 && div.clientHeight > 300) {
+      if (!scroll || div.scrollHeight > scroll.scrollHeight) scroll = div;
+    }
+  }
+  const geo = scroll ? { top: Math.round(scroll.scrollTop), h: scroll.scrollHeight, ch: scroll.clientHeight } : null;
+  return JSON.stringify({ geo, blocks, tables, adapter: 'generic' });
+})()
+'@
+
 $artSelJson = ConvertTo-Json -InputObject @($ArticleSelector -split ',' | ForEach-Object { $_.Trim() }) -Compress
-$collectJs = $collectJs.Replace('__ART_SEL__', $artSelJson)
-$collectJs = $collectJs.Replace('__ORDER_ATTR__', "'" + $OrderAttr + "'")
+if ($Adapter -eq 'generic') {
+  $collectJs = $genericCollectJs.Replace('__ART_SEL__', $artSelJson)
+  $collectJs = $collectJs.Replace('__ORDER_ATTR__', "'" + $OrderAttr + "'")
+} else {
+  $collectJs = $collectJs.Replace('__ART_SEL__', $artSelJson)
+  $collectJs = $collectJs.Replace('__ORDER_ATTR__', "'" + $OrderAttr + "'")
+  $collectJs = $collectJs.Replace('__BLOCK_ID_ATTR__', "'" + $BlockIdAttr + "'")
+  $collectJs = $collectJs.Replace('__BLOCK_TYPE_ATTR__', "'" + $BlockTypeAttr + "'")
+}
 
 # 滚动 JS：滚动到指定位置的滚动容器
 $scrollJs = @'
 (pos) => {
   function findDoc() {
     const frames = document.querySelectorAll('iframe');
-    for (const f of frames) { try { const d = f.contentDocument; if (d && d.querySelector('article')) return d; } catch (e) {} }
+    for (const f of frames) {
+      try {
+        const d = f.contentDocument;
+        if (d && d.querySelector('article, main, [role="main"], .doc-content, #content')) return d;
+      } catch (e) {}
+    }
     return document;
   }
   const doc = findDoc();
@@ -298,19 +559,36 @@ $ws = Connect-CdpWs $tab.webSocketDebuggerUrl
 $cdpId = [ref]1
 
 # ---------- 等正文渲染 ----------
+$initialLoginProbe = Get-CdpEvalValue -Ws $ws -CdpId $cdpId -Expr "(/login|passport|sso/i.test(location.href) || !!document.querySelector('input[type=password]')) ? 'login' : 'none'" -TimeoutMs 10000
+if ($initialLoginProbe -eq 'login') {
+  Write-Host "[harvest] ERROR: login-required。请复用用户已有登录态，或在可见浏览器中手动完成登录后重试。"
+  $ws.Dispose()
+  exit 2
+}
 $ready = $false
 $artSelFirst = ($ArticleSelector -split ',')[0].Trim()
 $probeExpr = @"
 (function(){
-  const sels = '$artSelFirst';
+  const sels = $artSelJson;
   const frames = document.querySelectorAll('iframe');
-  for (const f of frames) { try { if (f.contentDocument && f.contentDocument.querySelector(sels)) return 'frame-ok'; } catch(e){} }
-  return document.querySelector(sels) ? 'doc-ok' : 'none';
+  for (const f of frames) {
+    try {
+      const d = f.contentDocument;
+      if (d && sels.some(s => d.querySelector(s))) return 'frame-ok';
+    } catch(e){}
+  }
+  return sels.some(s => document.querySelector(s)) ? 'doc-ok' : 'none';
 })()
 "@
 for ($i = 0; $i -lt 30; $i++) {
   $probe = Get-CdpEvalValue -Ws $ws -CdpId $cdpId -Expr $probeExpr -TimeoutMs 15000
   if ($probe -and $probe -ne 'none') { $ready = $true; Write-Host "[harvest] ready ($probe) after $($i+1) polls"; break }
+  $loginProbe = Get-CdpEvalValue -Ws $ws -CdpId $cdpId -Expr "(/login|passport|sso/i.test(location.href) || !!document.querySelector('input[type=password]')) ? 'login' : 'none'" -TimeoutMs 10000
+  if ($loginProbe -eq 'login') {
+    Write-Host "[harvest] ERROR: login-required。请复用用户已有登录态，或在可见浏览器中手动完成登录后重试。"
+    $ws.Dispose()
+    exit 2
+  }
   Start-Sleep -Milliseconds 1500
 }
 if (-not $ready) {
@@ -323,6 +601,9 @@ Start-Sleep -Milliseconds 2500
 $win = 0
 $pos = 0
 $files = @()
+$stalled = 0
+$lastSignature = ''
+$lastTop = -1
 while ($true) {
   $win++
   $sr = Get-CdpEvalValue -Ws $ws -CdpId $cdpId -Expr "(($scrollJs)($pos))" -TimeoutMs 20000
@@ -332,16 +613,26 @@ while ($true) {
   $data = Get-CdpEvalValue -Ws $ws -CdpId $cdpId -Expr $collectJs -TimeoutMs 60000
   if (-not $data) { Start-Sleep -Milliseconds 1500; $data = Get-CdpEvalValue -Ws $ws -CdpId $cdpId -Expr $collectJs -TimeoutMs 60000 }
   if (-not $data) {
-    Write-Host "[harvest] WARN win $win 抽取为空，跳过"
+    $stalled++
+    Write-Host "[harvest] WARN win $win 抽取为空，连续空窗 $stalled/$MaxStalledWindows"
     if ($SingleView) { break }
+    if ($stalled -ge $MaxStalledWindows) { Write-Host "[harvest] ERROR 连续空抽取，停止以避免无限循环"; break }
     continue
   }
+
+  $obj = $data | ConvertFrom-Json
+  $blockIndex = 0
+  foreach ($block in @($obj.blocks)) {
+    $block | Add-Member -NotePropertyName w -NotePropertyValue $win -Force
+    $block | Add-Member -NotePropertyName i -NotePropertyValue $blockIndex -Force
+    $blockIndex++
+  }
+  $data = $obj | ConvertTo-Json -Depth 16 -Compress
 
   $file = Join-Path $OutDir ("{0}_w{1}.json" -f $Prefix, $win)
   [System.IO.File]::WriteAllText($file, $data, [System.Text.Encoding]::UTF8)
   $files += $file
 
-  $obj = $data | ConvertFrom-Json
   $nb = @($obj.blocks).Count
   $top = if ($obj.geo) { [int]$obj.geo.top } else { -1 }
   $h = if ($obj.geo) { [int]$obj.geo.h } else { 0 }
@@ -349,7 +640,22 @@ while ($true) {
   $geoTxt = if ($obj.geo) { "top=$top/$h ch=$ch" } else { 'nosc' }
   Write-Host ("[harvest] w{0} {1} blocks={2}" -f $win, $geoTxt, $nb)
 
+  $signature = (@($obj.blocks) | ForEach-Object { [string]$_.u }) -join '|'
+  if ($nb -eq 0) {
+    $stalled++
+  } elseif ($signature -eq $lastSignature -and $top -eq $lastTop) {
+    $stalled++
+  } else {
+    $stalled = 0
+  }
+  $lastSignature = $signature
+  $lastTop = $top
+
   if ($SingleView) { break }
+  if ($stalled -ge $MaxStalledWindows) {
+    Write-Host "[harvest] WARN 连续 $stalled 窗无新内容，停止采集"
+    break
+  }
   if ($top -ge 0 -and ($top + $ch) -ge ($h - 10)) { break }   # 到底
   $step = [Math]::Max($MinStepPx, [int]($h * $StepRatioPct / 100.0))
   $pos += $step
