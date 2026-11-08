@@ -96,7 +96,7 @@
 - Claude Code：`项目/skills/` → `.claude/skills/`
 - 不支持项目级 skill 的工具：走方式二
 
-> **注意**：`skills/` 里只有 `webnote-workflow/SKILL.md` 这张**路由卡**。角色定义（`agents/`）、步骤卡（`steps/`）与工具（`tools/`）是流程资产，归项目根。SKILL.md 第一步会先定位项目根（判定标准是目录下同时存在 `Webpage note workflow.md` 和 `tools/`），所以**完整流程必须在项目根工作区内运行**。若想在某工具里把角色注册成可复用的 subagent，把 `.claude/agents/` 里对应薄壳复制到该工具的注册位。
+> **注意**：`skills/webnote-workflow/SKILL.md` 是总路由卡；`skills/web-archive/SKILL.md` 承载防复制页、云文档和懒加载长文的无损拓存分支。角色定义（`agents/`）、步骤卡（`steps/`）与工具（`tools/`）是流程资产，归项目根。SKILL.md 第一步会先定位项目根（判定标准是目录下同时存在 `Webpage note workflow.md` 和 `tools/`），所以**完整流程必须在项目根工作区内运行**。若想在某工具里把角色注册成可复用的 subagent，把 `.claude/agents/` 里对应薄壳复制到该工具的注册位。
 
 ### 方式二：一条提示词（不装配也能用）
 

@@ -66,6 +66,12 @@ python _agent_scripts/move-definitions-to-root.py
 **已执行过一次**（2026-09-04）：agents/ + steps/ 已移到项目根。此后**不要再把这两个目录放回 skill 里**。
 注意：本脚本只替换带 `skills/webnote-workflow/` 前缀的引用；SKILL.md 里的裸引用需另加 `<项目根>/` 前缀（已手动完成）。
 
+## web-archive-smoke.html
+
+`web-archive` 迁移与回归用的本地夹具，覆盖标题、段落、引用、围栏代码块和行内加粗。它不访问网络，也不会写入业务目录。
+
+使用方式：以 CDP 调试模式启动 Chrome/Edge，打开该文件的 `file:///` URL，再依次调用 `skills/web-archive/scripts/` 下的 `harvest.ps1`、`merge-blocks.ps1`、`render-md.ps1`。输出应保留阅读顺序、引用、代码语言与行内样式。
+
 ---
 
 > 注意：以上脚本均位于 `<项目根>/_agent_scripts/`，项目根为脚本所在目录的上级。若移动了本目录，需同步修改脚本里的上溯级数。

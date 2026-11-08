@@ -19,6 +19,7 @@
 | 图片上的文字 | `pip install rapidocr-onnxruntime` |
 | 视频语音转写 | `pip install faster-whisper` + `ffmpeg` |
 | 图片 / 视频画面理解 | 上面几项 + `DEEPSEEK_API_KEY` |
+| 防复制页 / 钉钉飞书云文档无损拓存 | Chrome 或 Edge；PowerShell 5.1+ |
 
 不确定自己现在能用什么？跑一下自检（纯标准库，无需先装东西）：
 
@@ -49,7 +50,7 @@ python tools/check-env.py
 
 按五步顺序，每次让 AI 读对应的定义文件（见下方目录结构）。采编和确认你自己串。想先看产出长什么样：[`examples/`](examples/) 有一次完整运行的全部文件。
 
-> 分层说明：`webnote-workflow` 是**总编排 skill**；图片、视频、小红书三条内容提取链路分别由 `skills/image-extract`、`skills/video-extract`、`skills/xhs-note` 承载，采编时按内容类型加载。五步细则见 [Webpage note workflow.md](Webpage%20note%20workflow.md)。
+> 分层说明：`webnote-workflow` 是**总编排 skill**；图片、视频、小红书和网页无损拓存四条链路分别由 `skills/image-extract`、`skills/video-extract`、`skills/xhs-note`、`skills/web-archive` 承载，采编时按内容类型加载。五步细则见 [Webpage note workflow.md](Webpage%20note%20workflow.md)。
 
 ---
 
@@ -160,8 +161,9 @@ WebNote-Workflow/
 │   └── verifier.md
 │
 ├── skills/                             # 项目内置的 AI skill
-│   └── webnote-workflow/               # ★ 总编排 skill（AI 入口：资源索引 + 派发顺序）
-│       └── SKILL.md
+│   ├── webnote-workflow/               # ★ 总编排 skill（AI 入口：资源索引 + 派发顺序）
+│   │   └── SKILL.md
+│   └── web-archive/                    # 防复制页 / 云文档 / 懒加载长文无损拓存
 ├── prompts/                            # 开箱即用的入口提示词
 │   ├── 入口提示词-全自动.md             # 有子代理能力的工具
 │   └── 入口提示词-单对话框.md           # 纯聊天界面（三段式）
@@ -213,9 +215,9 @@ python tools/check-env.py
 
 它会列出当前可用能力、缺什么、怎么补。缺的能力只影响对应媒体，不会让流程失败。
 
-**然后把正文存好**（工具自选）：
+**然后准备正文或原页面**（工具自选）：
 
-正文**由你自己存好，本工作流不去抓网页**——直接让 AI 现抓十有八九抓不全，付费墙和需登录的页更抓不到。**用哪种工具、用不用，完全由你决定**，以下任选其一即可：
+普通页面可以手动保存正文；防复制页、云文档或懒加载长文可直接走 `web-archive` 分支，通过 CDP 读取渲染后的 DOM 并按块重建。只复用用户已有登录态，不绕过付费墙、账号权限或验证码。
 
 - **手动复制粘贴**：最稳，零依赖
 - **Obsidian 网页剪藏 / 简悦 / Cubox / Readwise Reader** 等稍后读工具
@@ -229,7 +231,7 @@ export DEEPSEEK_API_KEY="sk-xxx"   # 云端 DeepSeek Vision，绝不写进代码
 
 该能力为**可选增强**：不用则整个工作流完全不依赖 AI 做采集（见"采编"说明）。仅画面采集涉及调用云端模型，其余提取均为本地/确定性工具。
 
-#### 执行模式（两种，AI 按工具能力二选一）
+#### 执行模式（三种输出契约）
 
 完整编排见 [`skills/webnote-workflow/SKILL.md`](skills/webnote-workflow/SKILL.md)，这里只列要点：
 
@@ -244,6 +246,8 @@ export DEEPSEEK_API_KEY="sk-xxx"   # 云端 DeepSeek Vision，绝不写进代码
 核查官不能是笔记匠——自己查自己查不出编造内容。
 
 **模式 B · 单对话框分段（无 subagent 能力时的降级）**：同对话完成采编 + 归类 + 提炼 → **停下**，要求用户把产物与原文带到**新对话**核查 → 核查表带回后确认。
+
+**模式 C · 无损拓存**：防复制页、钉钉/飞书云文档、登录态长文或懒加载页面，使用 `skills/web-archive/SKILL.md`，经 DOM 探针、分窗采集、块级去重、阅读顺序恢复和 Markdown 渲染后落地。该模式不摘要、不改写、不进入归类与笔记匠；如果用户还要知识笔记，先完成无损存档并核验，再单独提炼。
 
 > 核查必须独立（新 subagent 或新对话），否则查不出自己编的内容。
 > 若实在无法开新对话，按 `agents/verifier.md` 的「降级声明」要求显式标注——**不声明，就是在用一份看起来合规的表格掩盖风险**。

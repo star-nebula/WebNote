@@ -39,12 +39,28 @@ CAPABILITIES = [
      "Windows: winget install Gyan.FFmpeg | macOS: brew install ffmpeg"),
     ("小红书笔记拉取", "module", ["requests"],
      "pip install requests（另需 Cookie）"),
+    ("防复制页 / 云文档无损拓存", "web_archive", None,
+     "需要 PowerShell 与 Chrome 或 Edge；仅 Windows 脚本链已实现"),
 ]
 
 
 def check_module(names):
     missing = [n for n in names if importlib.util.find_spec(n) is None]
     return missing
+
+
+def check_web_archive():
+    shell = shutil.which("pwsh") or shutil.which("powershell")
+    browsers = []
+    for path in (
+        r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+        r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+        r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+        r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
+    ):
+        if os.path.isfile(path):
+            browsers.append(path)
+    return bool(shell and browsers), bool(shell), bool(browsers)
 
 
 def probe():
@@ -60,6 +76,16 @@ def probe():
             state = "可用" if shutil.which(value) else "缺失"
         elif kind == "env":
             state = "可用" if os.environ.get(value) else "需配置"
+        elif kind == "web_archive":
+            ready, has_shell, has_browser = check_web_archive()
+            state = "可用" if ready else "缺失"
+            if not ready:
+                missing = []
+                if not has_shell:
+                    missing.append("PowerShell")
+                if not has_browser:
+                    missing.append("Chrome/Edge")
+                hint = f"{hint}（缺 {'、'.join(missing)}）"
         else:
             state = "缺失"
         results.append((name, state, hint))
