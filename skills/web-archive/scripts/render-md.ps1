@@ -137,7 +137,7 @@ foreach ($b in $blocks) {
   # --- 代码块 ---
   if ($ty -eq 'codeblock') {
     $lang = ([string]$b.lang).Trim().ToLower()
-    $lang = $lang -replace '[^a-z0-9_+.-]', ''
+    $lang = $lang -replace '[^a-z0-9_+.#-]', ''
 
     $codeLines = @($b.lines)
     # 剥离纯行号行（很多编辑器把它渲染成独立行）

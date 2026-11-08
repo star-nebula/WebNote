@@ -106,7 +106,7 @@ try {
         '1. 第一步',
         '2. 第二步',
         '> 普通 HTML 引用。',
-        '```haskell',
+        '```c#',
         '```mermaid',
         'sequenceDiagram;A->>B: ok',
         '跨行'
@@ -128,6 +128,9 @@ try {
     foreach ($needle in $case.Needles) { Assert-Contains $case.Name $markdown $needle }
     if ($case.Name -eq 'dingtalk' -and ([regex]::Matches($markdown, '合并').Count -lt 2)) {
       throw '[dingtalk] rowSpan cell content was not expanded into both rows.'
+    }
+    if ($case.Name -eq 'dingtalk' -and ([regex]::Matches($markdown, 'Mermaid 源码未在 DOM 中暴露').Count -lt 2)) {
+      throw '[dingtalk] both image-backed and inline-SVG Mermaid fallbacks must be preserved.'
     }
     if ($case.Name -eq 'generic' -and ([regex]::Matches($markdown, '跨行').Count -lt 2)) {
       throw '[generic] rowSpan cell content was not expanded into both rows.'

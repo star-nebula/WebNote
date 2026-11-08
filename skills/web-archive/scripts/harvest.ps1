@@ -201,6 +201,7 @@ $collectJs = @'
         if (value && !/^data:image\//i.test(value)) return value;
       }
       if (node.matches && (node.matches('.mermaid') || node.matches('code.language-mermaid'))) {
+        if (node.querySelector && node.querySelector('svg')) continue;
         const text = (node.innerText || '').trim();
         if (text && !/^<svg/i.test(text)) return text;
       }
@@ -210,9 +211,14 @@ $collectJs = @'
 
   function mermaidRenderOf(el) {
     const img = el.tagName && el.tagName.toLowerCase() === 'img' ? el : el.querySelector('img');
-    if (!img) return null;
-    const src = img.getAttribute('src') || '';
-    let evidence = `${el.className || ''} ${img.className || ''} ${img.alt || ''} ${img.title || ''} ${img.getAttribute('aria-label') || ''} ${src}`.toLowerCase();
+    const svg = img ? null : el.querySelector('svg');
+    if (!img && !svg) return null;
+    const src = img ? (img.getAttribute('src') || '') : '';
+    const svgText = svg ? svg.outerHTML : '';
+    let evidence = `${el.className || ''} ${el.getAttribute('data-type') || ''} ${img ? img.className || '' : ''} ${img ? img.alt || '' : ''} ${img ? img.title || '' : ''} ${img ? img.getAttribute('aria-label') || '' : ''} ${src} ${svg ? svgText.slice(0, 8000) : ''}`.toLowerCase();
+    if (svg) return /mermaid|flowchart|sequencediagram|classdiagram|statediagram/.test(evidence)
+      ? 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgText)
+      : null;
     try { evidence += ' ' + decodeURIComponent(src).slice(0, 8000).toLowerCase(); } catch (e) {}
     return /mermaid|flowchart|sequencediagram|classdiagram|statediagram/.test(evidence) ? src : null;
   }
@@ -437,6 +443,7 @@ $genericCollectJs = @'
         if (value && !/^data:image\//i.test(value)) return value;
       }
       if (node.matches && (node.matches('.mermaid') || node.matches('code.language-mermaid'))) {
+        if (node.querySelector && node.querySelector('svg')) continue;
         const text = (node.innerText || '').trim();
         if (text && !/^<svg/i.test(text)) return text;
       }
@@ -446,9 +453,14 @@ $genericCollectJs = @'
 
   function mermaidRenderOf(el) {
     const img = el.tagName && el.tagName.toLowerCase() === 'img' ? el : el.querySelector('img');
-    if (!img) return null;
-    const src = img.getAttribute('src') || '';
-    let evidence = `${el.className || ''} ${img.className || ''} ${img.alt || ''} ${img.title || ''} ${img.getAttribute('aria-label') || ''} ${src}`.toLowerCase();
+    const svg = img ? null : el.querySelector('svg');
+    if (!img && !svg) return null;
+    const src = img ? (img.getAttribute('src') || '') : '';
+    const svgText = svg ? svg.outerHTML : '';
+    let evidence = `${el.className || ''} ${el.getAttribute('data-type') || ''} ${img ? img.className || '' : ''} ${img ? img.alt || '' : ''} ${img ? img.title || '' : ''} ${img ? img.getAttribute('aria-label') || '' : ''} ${src} ${svg ? svgText.slice(0, 8000) : ''}`.toLowerCase();
+    if (svg) return /mermaid|flowchart|sequencediagram|classdiagram|statediagram/.test(evidence)
+      ? 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgText)
+      : null;
     try { evidence += ' ' + decodeURIComponent(src).slice(0, 8000).toLowerCase(); } catch (e) {}
     return /mermaid|flowchart|sequencediagram|classdiagram|statediagram/.test(evidence) ? src : null;
   }
@@ -495,7 +507,7 @@ $genericCollectJs = @'
     } else if (ty === 'codeblock') {
       const code = el.querySelector('code') || el;
       const className = `${el.className || ''} ${code.className || ''}`;
-      const langMatch = className.match(/language-([A-Za-z0-9_+.-]+)/);
+      const langMatch = className.match(/language-([A-Za-z0-9_+.#-]+)/);
       entry.lang = el.getAttribute('data-language') || code.getAttribute('data-language') || (langMatch ? langMatch[1] : '');
       entry.lines = (code.innerText || '').replace(/^\s*\d+\s*$/gm, '').split(/\r?\n/);
       entry.text = entry.lines.join('\n');
