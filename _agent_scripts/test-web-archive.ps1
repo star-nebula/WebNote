@@ -79,6 +79,7 @@ try {
         '```brainfuck',
         '```mermaid',
         'graph TD;A-->B;',
+        'Mermaid 源码未在 DOM 中暴露',
         '指标名称',
         '合并'
       )
@@ -129,6 +130,9 @@ try {
     if ($case.Name -eq 'generic' -and ([regex]::Matches($markdown, '跨行').Count -lt 2)) {
       throw '[generic] rowSpan cell content was not expanded into both rows.'
     }
+    if ($case.Name -eq 'generic' -and ([regex]::Matches($markdown, '列 B').Count -lt 2)) {
+      throw '[generic] colSpan header content was not expanded into both columns.'
+    }
     Write-Host "[PASS] $($case.Name)"
     Close-TestTab $case.File
   }
@@ -140,6 +144,14 @@ try {
   if ($loginText -notmatch 'login-required') { throw "[login] expected login-required, got: $loginText" }
   Write-Host '[PASS] login-wall'
   Close-TestTab 'web-archive-login-wall.html'
+
+  $stallUrl = 'file:///' + ((Join-Path $fixtures 'web-archive-stall-smoke.html') -replace '\\', '/')
+  $stallOut = Join-Path $tempRoot 'work-stall'
+  $stallLog = & (Join-Path $scripts 'harvest.ps1') -Url $stallUrl -Prefix stall -OutDir $stallOut -Port $Port -Adapter generic -MaxStalledWindows 1 -MaxWindows 10 -KeepTab *>&1
+  $stallText = $stallLog -join "`n"
+  if ($stallText -notmatch '连续 1 窗无新内容') { throw "[stall] expected no-progress guard, got: $stallText" }
+  Write-Host '[PASS] stall-guard'
+  Close-TestTab 'web-archive-stall-smoke.html'
 
   Write-Host 'ALL WEB-ARCHIVE TESTS PASSED'
 }

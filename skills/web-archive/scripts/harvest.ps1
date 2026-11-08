@@ -208,6 +208,15 @@ $collectJs = @'
     return null;
   }
 
+  function mermaidRenderOf(el) {
+    const img = el.tagName && el.tagName.toLowerCase() === 'img' ? el : el.querySelector('img');
+    if (!img) return null;
+    const src = img.getAttribute('src') || '';
+    let evidence = `${el.className || ''} ${img.className || ''} ${img.alt || ''} ${img.title || ''} ${img.getAttribute('aria-label') || ''} ${src}`.toLowerCase();
+    try { evidence += ' ' + decodeURIComponent(src).slice(0, 8000).toLowerCase(); } catch (e) {}
+    return /mermaid|flowchart|sequencediagram|classdiagram|statediagram/.test(evidence) ? src : null;
+  }
+
   const tops = topBlocks();
   const blocks = [], tables = [];
 
@@ -251,10 +260,16 @@ $collectJs = @'
     }
 
     const mermaidSource = mermaidSourceOf(b);
+    const mermaidRender = mermaidRenderOf(b);
     if (mermaidSource) {
       entry.ty = 'mermaid';
       entry.mermaid = mermaidSource;
       entry.text = mermaidSource;
+    } else if (mermaidRender) {
+      entry.ty = 'mermaid';
+      entry.imgSrc = mermaidRender;
+      entry.mermaidSourceMissing = true;
+      entry.text = '[MERMAID_RENDERED_ONLY]';
     } else if (b.querySelector('table')) {
       const tb = b.querySelector('table');
       const rows = [];
@@ -424,6 +439,15 @@ $genericCollectJs = @'
     return null;
   }
 
+  function mermaidRenderOf(el) {
+    const img = el.tagName && el.tagName.toLowerCase() === 'img' ? el : el.querySelector('img');
+    if (!img) return null;
+    const src = img.getAttribute('src') || '';
+    let evidence = `${el.className || ''} ${img.className || ''} ${img.alt || ''} ${img.title || ''} ${img.getAttribute('aria-label') || ''} ${src}`.toLowerCase();
+    try { evidence += ' ' + decodeURIComponent(src).slice(0, 8000).toLowerCase(); } catch (e) {}
+    return /mermaid|flowchart|sequencediagram|classdiagram|statediagram/.test(evidence) ? src : null;
+  }
+
   const blocks = [], tables = [];
   for (const el of semanticBlocks) {
     const tag = el.tagName.toLowerCase();
@@ -446,8 +470,11 @@ $genericCollectJs = @'
     }
 
     const mermaid = mermaidSourceOf(el);
+    const mermaidRendered = mermaidRenderOf(el);
     if (mermaid) {
       entry.ty = 'mermaid'; entry.mermaid = mermaid; entry.text = mermaid;
+    } else if (mermaidRendered) {
+      entry.ty = 'mermaid'; entry.imgSrc = mermaidRendered; entry.mermaidSourceMissing = true; entry.text = '[MERMAID_RENDERED_ONLY]';
     } else if (ty === 'table') {
       const table = el.querySelector('table') || el;
       const rows = [];
@@ -643,7 +670,7 @@ while ($true) {
   $signature = (@($obj.blocks) | ForEach-Object { [string]$_.u }) -join '|'
   if ($nb -eq 0) {
     $stalled++
-  } elseif ($signature -eq $lastSignature -and $top -eq $lastTop) {
+  } elseif ($signature -eq $lastSignature) {
     $stalled++
   } else {
     $stalled = 0

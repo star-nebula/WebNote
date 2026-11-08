@@ -98,7 +98,7 @@ foreach ($b in $blocks) {
   }
 
   # --- 独立图片块 ---
-  if ($b.voidType -eq 'image' -or $b.imgSrc) {
+  if (($b.voidType -eq 'image' -or $b.imgSrc) -and $ty -ne 'mermaid') {
     if ($b.imgSrc) {
       $lines.Add(''); $lines.Add('![](' + [string]$b.imgSrc + ')'); $lines.Add('')
       $stats.images++
@@ -118,8 +118,8 @@ foreach ($b in $blocks) {
 
   # --- 代码块 ---
   if ($ty -eq 'mermaid') {
-    $source = [string]$b.mermaid
-    if ([string]::IsNullOrWhiteSpace($source)) { $source = [string]$b.text }
+    $source = if ($b.mermaidSourceMissing) { '' } else { [string]$b.mermaid }
+    if ([string]::IsNullOrWhiteSpace($source) -and -not $b.mermaidSourceMissing) { $source = [string]$b.text }
     if (-not [string]::IsNullOrWhiteSpace($source)) {
       $lines.Add(''); $lines.Add('```mermaid')
       foreach ($srcLine in ($source -split '\r?\n')) { $lines.Add($srcLine) }
