@@ -380,7 +380,12 @@ $genericCollectJs = @'
       acceptNode(node) {
         if (node.nodeType === Node.TEXT_NODE) return NodeFilter.FILTER_ACCEPT;
         if (node.nodeType !== Node.ELEMENT_NODE) return NodeFilter.FILTER_REJECT;
-        if (node.matches && node.matches(BLOCK_SELECTOR)) return NodeFilter.FILTER_REJECT;
+        if (node.matches && node.matches(BLOCK_SELECTOR)) {
+          // Paragraphs nested in quotes/table cells are part of the selected block,
+          // not separate top-level knowledge blocks.
+          if (node.tagName === 'P') return NodeFilter.FILTER_ACCEPT;
+          return NodeFilter.FILTER_REJECT;
+        }
         return NodeFilter.FILTER_ACCEPT;
       }
     });
@@ -507,7 +512,12 @@ $genericCollectJs = @'
 
     if (ty === 'list-item') {
       const list = el.closest('ul,ol');
-      entry.li = list && list.tagName === 'OL' ? '1.' : '•';
+      if (list && list.tagName === 'OL') {
+        const items = Array.from(list.children).filter(child => child.tagName === 'LI');
+        entry.li = (items.indexOf(el) + 1) + '.';
+      } else {
+        entry.li = '•';
+      }
       let depth = 0;
       for (let p = el.parentElement; p && p !== art; p = p.parentElement) if (p.matches && p.matches('ul,ol')) depth++;
       entry.ind = depth * 12;
