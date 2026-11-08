@@ -389,7 +389,11 @@ $genericCollectJs = @'
         if (node.matches && node.matches(BLOCK_SELECTOR)) {
           // Paragraphs nested in quotes/table cells are part of the selected block,
           // not separate top-level knowledge blocks.
-          if (node.tagName === 'P') return NodeFilter.FILTER_ACCEPT;
+          if (node.tagName === 'P') {
+            if (current) { runs.push(current); current = null; }
+            if (runs.length && !runs[runs.length - 1].br) runs.push({ br: 1 });
+            return NodeFilter.FILTER_ACCEPT;
+          }
           return NodeFilter.FILTER_REJECT;
         }
         return NodeFilter.FILTER_ACCEPT;
@@ -526,7 +530,8 @@ $genericCollectJs = @'
       const list = el.closest('ul,ol');
       if (list && list.tagName === 'OL') {
         const items = Array.from(list.children).filter(child => child.tagName === 'LI');
-        entry.li = (items.indexOf(el) + 1) + '.';
+        const start = parseInt(list.getAttribute('start') || '1');
+        entry.li = (start + items.indexOf(el)) + '.';
       } else {
         entry.li = '•';
       }
