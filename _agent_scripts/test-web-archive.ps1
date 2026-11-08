@@ -1,4 +1,4 @@
-param(
+﻿param(
   [string]$BrowserPath = "",
   [int]$Port = 9555,
   [switch]$KeepTemp
