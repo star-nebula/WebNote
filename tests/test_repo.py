@@ -231,3 +231,25 @@ def test_write_guard_protects_template():
     )
     assert res.returncode == 2, "骨架目录必须只读"
     assert "runs/_template/" in res.stderr
+
+
+def test_vendored_skill_is_a_real_copy():
+    """外部技能必须是真副本：不是链接，且来源声明是 copy 模式、只同步它一个。"""
+    vendored = ROOT / "skills/browser-skill"
+    assert vendored.is_dir() and not vendored.is_symlink(), "skills/browser-skill 必须是真实目录"
+    head = read(vendored / "SKILL.md")[:400]
+    assert "name: browser-skill" in head, "副本缺 frontmatter 或名字不对"
+
+    cfg_path = ROOT / ".skillshare/config.yaml"
+    assert cfg_path.is_file(), "缺 .skillshare/config.yaml（副本的来源与刷新配方）"
+    cfg = yaml.safe_load(cfg_path.read_text(encoding="utf-8")) or {}
+    targets = cfg.get("targets") or []
+    assert len(targets) == 1, "只允许一个 vendored target"
+    skills = targets[0].get("skills") or {}
+    assert skills.get("mode") == "copy", "必须 copy 模式，symlink 会让仓库依赖外部路径"
+    assert skills.get("include") == ["browser-skill"], "只同步 browser-skill，别把整个技能库拖进来"
+
+
+def test_no_hand_copied_manuals():
+    """docs/vendor 那两份手册是死副本（会漂），已由 skills/browser-skill 取而代之。"""
+    assert not (ROOT / "docs/vendor").exists(), "docs/vendor 不该回来；权威说明在技能库，副本在 skills/browser-skill"

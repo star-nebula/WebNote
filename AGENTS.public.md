@@ -59,6 +59,8 @@
 | `skills/` | 五个技能：`webnote-workflow`（总编排）、`web-archive`、`image-extract`、`video-extract`、`xhs-note` | 开工先读对应 `SKILL.md`（只做路由），细则在 `references/` |
 | `skills/webnote-workflow/references/steps/` | 五步流程细则（collect / collect-image / collect-video-audio / collect-web-archive / confirm） | 手动流水线（路径 C）逐条读 |
 | `agents/` | 三个子角色：`classifier`（整理分类）、`distiller`（提炼笔记）、`verifier`（独立核查） | 派发 subagent 前读，把**文件路径**交给它 |
+| `skills/browser-skill/` | 外部依赖（`bsk`）说明的副本，**由 skillshare `mode: copy` 同步，勿手改** | 只在要改 `extract-webpage.py` 的调用方式时读 |
+| `.skillshare/config.yaml` | 副本的来源声明：技能库 `browser-skill` → `skills/`，`mode: copy`（不是链接） | 刷新副本时（`skillshare sync -p`） |
 | `bot.yaml` | 能力清单真源：角色/skill/流程/命令/各工具注册面 | 改角色注册信息、增删技能时 |
 | `.claude/agents/` | Claude Code 的注册面，**生成物**（`bot.yaml` + `agents/*.md` → 勿手改） | 只由 `doctor.py --wire` 写入 |
 | `memory/` | 长期记忆：跨 run 提炼的结论，`long-term/` 一条一文件 + `index.md` 索引 | 开工前扫索引；收尾时沉淀新结论（用户点头后写） |

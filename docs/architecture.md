@@ -123,4 +123,4 @@
 ---
 
 > 设计参考：[Agent OS 的第一课：会分工，才会用 Agent](https://www.axtonliu.ai/newsletters/ai-2/posts/agent-os-workstation-division)（分工隔离、独立核查、确认闸门三层设计）
-> 工具依赖：BrowserSkill（浏览器操作）见 [docs/BrowserSkill 安装指南](vendor/BrowserSkill%20Installation%20Guide.md)，命令参考见 [docs/BrowserSkill 命令参考](vendor/BrowserSkill%20Command%20Reference.md)
+> 工具依赖：BrowserSkill（`bsk` CLI，只在正文为空 / 需渲染时调用）。说明副本在 [`skills/browser-skill/`](../skills/browser-skill/SKILL.md)（skillshare `copy` 同步，勿手改），命令以 `bsk --help` 为准。

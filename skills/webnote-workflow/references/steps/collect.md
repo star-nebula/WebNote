@@ -23,7 +23,7 @@
 | 判断结果 | 处理方式 | 分支卡 |
 |---|---|---|
 | 图文（已有正文） | 直接使用，不调工具 | — |
-| 图文（正文为空） | `extract-webpage.py <URL>`（BrowserSkill） | — |
+| 图文（正文为空） | `extract-webpage.py <URL>`（走 `bsk`，需在 PATH 上） | — |
 | 文档 | `extract-document.py <文件路径>` | — |
 | 图片 | OCR →（可选）Vision | [collect-image.md](collect-image.md) |
 | 视频 / 音频 | 页面文本 → ASR → 画面 | [collect-video-audio.md](collect-video-audio.md) |
@@ -44,7 +44,7 @@
 
 ## 铁律
 
-- 通过 BrowserSkill 操作**用户已登录的浏览器**读取页面，不发起未经认证的 HTTP 请求
+- 通过 `bsk`（BrowserSkill）操作**用户已登录的浏览器**读取页面，不发起未经认证的 HTTP 请求
 - 只提取已有文本，不生成、不总结、不补充
 - 提取失败如实标「无法提取」，不硬凑
 - `DEEPSEEK_API_KEY` 只走环境变量，不进代码、不进 git

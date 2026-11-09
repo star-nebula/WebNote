@@ -29,6 +29,9 @@ __pycache__/
 # ASR 专用虚拟环境（本地，不入库）
 .venv-asr/
 
+# skillshare 运行态（每次 sync 都会变；副本本身在 skills/browser-skill/）
+skills/.skillshare-manifest.json
+
 # ===== 私有入口与角色原始件：只在本机 =====
 # AGENTS.md 是私有完整版（含本机路径、记忆库位置）；公开版是生成的 AGENTS.public.md
 /AGENTS.md

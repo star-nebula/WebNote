@@ -176,7 +176,8 @@ WebNote/
 │   ├── web-archive/                    #   防复制页 / 云文档 / 懒加载长文无损拓存
 │   ├── image-extract/                  #   图片 OCR
 │   ├── video-extract/                  #   视频转写
-│   └── xhs-note/                       #   小红书笔记
+│   ├── xhs-note/                       #   小红书笔记
+│   └── browser-skill/                  #   外部依赖副本（bsk 说明，勿手改；skillshare copy 刷新）
 ├── memory/                             # ★ 长期记忆：跨 run 提炼的结论（不是过程）
 │   ├── index.md                        #   索引：一行一条，只挑相关的读全文
 │   └── long-term/                      #   一条一文件，frontmatter 标置信度与来源
@@ -205,7 +206,7 @@ WebNote/
 │   ├── architecture.md                 #   ★ v3 现行架构（流程理念 + 五步索引）
 │   ├── decisions.md                    #   决策记录
 │   ├── versions/                       #   已发表的历史版本（正文原样存档）
-│   └── vendor/                         #   第三方工具手册（BrowserSkill）
+│   └── README.md                       #   文档索引（含外部依赖说明）
 ├── tests/                              # 验证层（CI 跑同一套）
 │   ├── test_repo.py                    #   仓库不变量：技能/步骤/角色齐全、无私有路径泄漏
 │   ├── test-web-archive.ps1            #   web-archive 真机回归（headless Chromium）
@@ -254,7 +255,7 @@ python tools/check-env.py
 
 - **手动复制粘贴**：最稳，零依赖
 - **Obsidian 网页剪藏 / 简悦 / Cubox / Readwise Reader** 等稍后读工具
-- **BrowserSkill（可选）**：腾讯开源的浏览器桥接，可操控你已登录的浏览器读取页面，适合需要登录态的批量抓取（[安装指南](docs/vendor/BrowserSkill%20Installation%20Guide.md)）。**并非必需**，只是其中一种方式
+- **BrowserSkill（可选）**：浏览器桥接（`bsk` CLI），可操控你已登录的浏览器读取页面，适合需要登录态 / 需要渲染的抓取。**并非必需**，只在「图文但正文为空」时才会被调用。说明副本在 [`skills/browser-skill/`](skills/browser-skill/SKILL.md)，命令以 `bsk --help` 为准（来源与刷新方式见 [docs/README.md](docs/README.md#外部依赖)）
 
 **可选：若要用视频画面采集**（教程/课程/录屏类视频，提取画面文字与语义），需额外准备：
 

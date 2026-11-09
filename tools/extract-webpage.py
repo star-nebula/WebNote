@@ -11,6 +11,7 @@ Agent 0 · 采编 — 网页文本提取工具（通过 BrowserSkill）
 """
 
 import json
+import shutil
 import subprocess
 import sys
 
@@ -57,6 +58,17 @@ def main():
         sys.exit(1)
 
     url = sys.argv[1]
+
+    if shutil.which('bsk') is None:
+        print(json.dumps({
+            'success': False, 'text': '', 'char_count': 0, 'method': 'error',
+            'error': (
+                '找不到 bsk：BrowserSkill 未安装或未加入 PATH。\n'
+                '装好后确认 `bsk --version` 能跑；命令速查用 `bsk --help`；'
+                '说明副本见 skills/browser-skill/SKILL.md。'
+            ),
+        }, ensure_ascii=False))
+        sys.exit(2)
 
     # 1. 创建会话
     stdout, rc = run_bsk(['session', 'start'])

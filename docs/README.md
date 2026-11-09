@@ -6,7 +6,20 @@
 | [versions/v2-五个Agent到三个-2026-08-04.md](versions/v2-五个Agent到三个-2026-08-04.md) | 为什么把 5 个独立 Agent 精简成「调度器 + 3 subagent」（已发表） | v2 · 已被 v3 取代 |
 | [versions/v1-四步工作流-2026-07-14.md](versions/v1-四步工作流-2026-07-14.md) | 四步工作流原版：整理 / 提炼 / 核查 / 确认（已发表） | v1 · 已被 v3 取代 |
 | [decisions.md](decisions.md) | 决策记录（2026-10-31 从 SemanticMemory 迁入，持续追加） | 活文档 |
-| [vendor/](vendor/) | 第三方工具手册（BrowserSkill 安装与命令参考），原样存放 | 第三方文档 |
+
+## 外部依赖
+
+BrowserSkill（`bsk` CLI）是本仓唯一的外部工具依赖，只在「图文但正文为空 / 需要渲染」时被 `tools/extract-webpage.py` 调用。
+
+- 权威说明：技能库里的 `browser-skill/SKILL.md`（随工具更新）
+- 本仓副本：`skills/browser-skill/`（由 skillshare 以 `mode: copy` 单向同步，别手改）
+- 命令速查：`bsk --help`（副本可能落后于已安装版本）
+
+刷新副本（仅在有技能库的机器上需要）：
+
+```bash
+skillshare sync -p      # 在仓库根目录执行，配置见 .skillshare/config.yaml
+```
 
 ## 三个版本的关系
 
