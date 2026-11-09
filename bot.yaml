@@ -50,6 +50,17 @@ skills:
   - name: xhs-note
     path: skills/xhs-note
 
+# 外部技能：真源不在本仓，也不是技能库维护的。
+# 刷新方式：拉上游 → ./tools/check_vendor.py --online 看差异 → 覆盖副本 + 更新本段。
+vendored:
+  - path: skills/browser-skill
+    upstream: https://github.com/Tencent/BrowserSkill
+    subdir: crates/bsk-cli/skill          # 上游技能真身所在目录（monorepo 内）
+    ref: e380cbcce3d2b77a49cabff4e104934ed7fa16e5
+    snapshot: 2026-11-09
+    layout: SKILL.md + references/         # 上游 2026-11 由单文件改为 主体 + references
+    note: 经技能库 E:\Agent\skills\browser-skill 中转，对应 .skillshare/config.yaml 的 include
+
 # 流程：只写步骤名，细则在 skills/webnote-workflow/references/steps/
 flows:
   - id: lean

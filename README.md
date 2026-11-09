@@ -177,7 +177,7 @@ WebNote/
 │   ├── image-extract/                  #   图片 OCR
 │   ├── video-extract/                  #   视频转写
 │   ├── xhs-note/                       #   小红书笔记
-│   └── browser-skill/                  #   外部依赖副本（bsk 说明，勿手改；skillshare copy 刷新）
+│   └── browser-skill/                  #   外部技能（上游 Tencent/BrowserSkill，勿手改；来源见 bot.yaml）
 ├── memory/                             # ★ 长期记忆：跨 run 提炼的结论（不是过程）
 │   ├── index.md                        #   索引：一行一条，只挑相关的读全文
 │   └── long-term/                      #   一条一文件，frontmatter 标置信度与来源
@@ -255,7 +255,7 @@ python tools/check-env.py
 
 - **手动复制粘贴**：最稳，零依赖
 - **Obsidian 网页剪藏 / 简悦 / Cubox / Readwise Reader** 等稍后读工具
-- **BrowserSkill（可选）**：浏览器桥接（`bsk` CLI），可操控你已登录的浏览器读取页面，适合需要登录态 / 需要渲染的抓取。**并非必需**，只在「图文但正文为空」时才会被调用。说明副本在 [`skills/browser-skill/`](skills/browser-skill/SKILL.md)，命令以 `bsk --help` 为准（来源与刷新方式见 [docs/README.md](docs/README.md#外部依赖)）
+- **BrowserSkill（可选）**：浏览器桥接（`bsk` CLI），可操控你已登录的浏览器读取页面，适合需要登录态 / 需要渲染的抓取。**并非必需**，只在「图文但正文为空」时才会被调用。技能副本在 [`skills/browser-skill/`](skills/browser-skill/SKILL.md)（上游 `Tencent/BrowserSkill`，代际记在 `bot.yaml`，检查用 `python tools/check_vendor.py`），命令以 `bsk --help` 为准（来源与刷新方式见 [docs/README.md](docs/README.md#外部依赖)）
 
 **可选：若要用视频画面采集**（教程/课程/录屏类视频，提取画面文字与语义），需额外准备：
 

@@ -250,6 +250,45 @@ def test_vendored_skill_is_a_real_copy():
     assert skills.get("include") == ["browser-skill"], "只同步 browser-skill，别把整个技能库拖进来"
 
 
+def test_vendored_manifest_records_upstream():
+    """外部技能的真源必须记在 bot.yaml 里：上游仓库 + 具体 commit + 快照日期。
+
+    .skillshare/config.yaml 只说明「从哪里 copy」，说不清「上游是哪一代」；
+    exe 版本号也不行（别人不一定有那个 exe）。所以真源记在清单里，离线可校验。
+    """
+    bot = yaml.safe_load((ROOT / "bot.yaml").read_text(encoding="utf-8")) or {}
+    entries = bot.get("vendored") or []
+    assert entries, "bot.yaml 缺 vendored 段（外部技能的来源声明）"
+
+    cfg = yaml.safe_load((ROOT / ".skillshare/config.yaml").read_text(encoding="utf-8")) or {}
+    included = (cfg["targets"][0]["skills"] or {}).get("include") or []
+
+    for v in entries:
+        where = f"vendored: {v.get('path')}"
+        assert v["upstream"].startswith("https://github.com/"), f"{where} 的 upstream 必须是仓库地址"
+        assert re.fullmatch(r"[0-9a-f]{40}", str(v["ref"])), f"{where} 的 ref 必须是完整 commit sha"
+        assert re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(v["snapshot"])), f"{where} 的 snapshot 必须是日期"
+        assert Path(v["path"]).name in included, f"{where} 没在 .skillshare 的 include 里（两边对不上）"
+
+        path = ROOT / v["path"]
+        assert path.is_dir(), f"{where} 副本目录不存在"
+        assert not any(p.is_symlink() for p in path.rglob("*")), f"{where} 里不该有符号链接"
+
+
+@pytest.mark.parametrize("name", ["browser-skill"])
+def test_vendored_references_all_reachable(name):
+    """上游 2026-11 起是「主体 + references」，主体必须把每个 references 文件都指到。
+
+    只同步一半（比如只覆盖 SKILL.md）会让 agent 读到指向不存在文件的引用。
+    """
+    skill = ROOT / "skills" / name
+    refs = {p.name for p in (skill / "references").glob("*.md")}
+    assert refs, f"skills/{name}/references 为空（上游布局是 SKILL.md + references/）"
+    body = read(skill / "SKILL.md")
+    linked = set(re.findall(r"references/([\w-]+\.md)", body))
+    assert refs <= linked, f"SKILL.md 没有引用到：{sorted(refs - linked)}"
+
+
 def test_no_hand_copied_manuals():
     """docs/vendor 那两份手册是死副本（会漂），已由 skills/browser-skill 取而代之。"""
     assert not (ROOT / "docs/vendor").exists(), "docs/vendor 不该回来；权威说明在技能库，副本在 skills/browser-skill"

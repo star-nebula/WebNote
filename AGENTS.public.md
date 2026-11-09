@@ -30,6 +30,10 @@
 - `video-extract` → `skills/video-extract/SKILL.md`
 - `xhs-note` → `skills/xhs-note/SKILL.md`
 
+外部技能（真源不在本仓，别改内容，按需读）：
+
+- `skills/browser-skill` ← https://github.com/Tencent/BrowserSkill @ e380cbc（快照 2026-11-09，SKILL.md + references/）
+
 流程：
 - `lean`（精简流程）：取原文 → 分类 → 提炼 → 核查 → 确认
 - `full`（完整流程）：采编清单 → 整理分类 → 笔记提炼 → 独立核查 → 人工确认

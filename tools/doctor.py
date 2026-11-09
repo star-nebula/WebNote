@@ -120,6 +120,15 @@ def render_machine_block(bot: dict) -> str:
     for s in bot.get("skills", []):
         lines.append(f"- `{s['name']}` → `{s['path']}/SKILL.md`")
 
+    vendored = bot.get("vendored") or []
+    if vendored:
+        lines += ["", "外部技能（真源不在本仓，别改内容，按需读）：", ""]
+        for v in vendored:
+            lines.append(
+                f"- `{v['path']}` ← {v.get('upstream', '')}"
+                f" @ {str(v.get('ref', ''))[:7]}（快照 {v.get('snapshot', '?')}，{v.get('layout', '')}）"
+            )
+
     lines += ["", "流程："]
     for f in bot.get("flows", []):
         lines.append(f"- `{f['id']}`（{f.get('title', '')}）：{' → '.join(f.get('steps', []))}")

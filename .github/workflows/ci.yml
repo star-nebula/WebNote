@@ -24,6 +24,9 @@ jobs:
       - name: 生成物与真源一致（bot.yaml → .claude/）
         run: python tools/doctor.py --check
 
+      - name: 外部技能来源与完整性（离线，不联网）
+        run: python tools/check_vendor.py
+
       - name: Python 语法检查
         run: python -m compileall -q tools tests
 

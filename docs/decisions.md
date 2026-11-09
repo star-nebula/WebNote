@@ -2,6 +2,22 @@
 
 > 从 SemanticMemory 迁入（2026-10-31）。原 claim 已归档，`--include-history` 仍可查。
 
+## 外部技能：副本进仓、真源记在 bot.yaml，exe 版本号不算真源
+
+**问题**：`browser-skill` 来自腾讯的 `Tencent/BrowserSkill`（MIT），既不由本仓维护，也不是技能库维护的——技能库那份是 2026-09-30 从 bsk 产物人工搬进去的快照。链条是三跳：上游仓库 → `crates/bsk-cli/skill/` → 技能库 → 本仓 `skills/browser-skill/`。`.skillshare/config.yaml` 只说得清最后一跳。
+
+**发现**：查上游时发现我们落后一代。上游 2026-11 起把单文件 `SKILL.md`（229 行 / 11,406 B）改成「主体 131 行 + `references/` 13 个文件 / 81 KB」，上游 `crates/bsk-cli/src/skill_install/` 里的 `legacy-digests.txt`、`provenance.rs`、`sync.rs` 就是这次布局迁移的痕迹。
+
+**决定**：
+
+1. **真源写进 `bot.yaml` 的 `vendored:` 段**（`upstream` / `subdir` / `ref`（完整 commit sha）/ `snapshot` / `layout`），因为 `.skillshare` 只描述「从哪里 copy」，说不清「上游是哪一代」。
+2. **不用 `bsk --version` 当基准**：别人机器上不一定有那个 exe，而且 exe 与仓库本来就可能不同代。
+3. **检查分两层**：`tools/check_vendor.py`（离线：副本存在、是真目录不是链接、文件数、是��与 include 对得上；进 CI）与 `--online`（拉上游 tree API 逐个比 blob sha；联网、可能限流，不进 CI）。
+4. **副本按上游布局整体覆盖**，不只换 `SKILL.md`——主体里引用了每个 references 文件，只同步一半会让 agent 读到悬空引用（`test_vendored_references_all_reachable` 守着这条）。
+5. **库那一跳保留**：skillshare 的 `include` 按 `<name>/SKILL.md` 找技能，上游是 `crates/bsk-cli/skill/SKILL.md`（目录名 `skill`），直连需要先改名，比中转更绕。同步时两份一起换，否则下次 `skillshare sync -p` 会把副本退回旧版。
+
+**代价**：仓库多 88 KB 与 13 个文件；`check_vendor.py --online` 依赖 `gh` 或 `GITHUB_TOKEN`（匿名 API 会 403 限流）。
+
 ## 记忆分层：核心记忆进 AGENTS.md，长期记忆进 memory/
 
 **问题**：`persona/SOUL.md` 与 `AGENTS.md` 内容重叠（身份、专职角色、硬约束、汇报格式各写一遍），且 SOUL 里的落库路径还是错的（`<知识库根>/vault/Resources/`（`vault/` 早已不存在））。同时没有任何地方沉淀"跨 run 的经验"——都散在 `runs/`（过程）和知识库（产出）里。
