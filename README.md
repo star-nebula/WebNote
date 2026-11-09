@@ -302,7 +302,7 @@ AI 出提案，你按确认键。判断标准：**这个动作如果错了，撤
   `E:\data\models\HuggingFace\hub\models--Systran--faster-whisper-large-v3` 的 snapshot 目录再传给 `WhisperModel`。
   只写模型名仍会联网校验；`large-v3-turbo` 的上游仓库已私有化，按名字加载会 401。
 - **git 推送走 Windows 侧**：WSL 里 `~/.ssh` 为空，`git push` 会卡在 publickey 等待。
-  在 Windows 终端（或 `cmd.exe /c "cd /d E:\Projects\personal\WebNote && git push"`）执行，密钥在 `C:\Users\stars\.ssh`。
+  在 Windows 终端（或 `cmd.exe /c "cd /d E:\Projects\bots\WebNote && git push"`）执行，密钥在 `C:\Users\stars\.ssh`。
 
 ### 参考
 
