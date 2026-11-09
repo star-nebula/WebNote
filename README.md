@@ -50,10 +50,9 @@ python tools/doctor.py --wire    # Claude Code：生成 .claude/agents/ 并挂�
 
 **路径 B · 一条提示词（不装配也能用，任何 AI 都行）**
 
-- 有子代理能力的工具（Claude Code / CodeBuddy / Cursor）→ [`prompts/入口提示词-全自动.md`](prompts/入口提示词-全自动.md)
-- 纯聊天界面（ChatGPT / Claude 网页版）→ [`prompts/入口提示词-单对话框.md`](prompts/入口提示词-单对话框.md)
+`AGENTS.public.md` 本身就是给 AI 的入口说明——把它和你的内容一起交给 AI，或者让 AI 直接读这个仓库即可。
 
-复制对应文件里的代码块，把项目路径换成你的实际路径，连同内容一起发给 AI。
+**你的工具没有 subagent 能力**（纯聊天界面、ChatGPT / Claude 网页版）：改用模式 B 的三段式，复制 [`degraded-single-dialog.md`](skills/webnote-workflow/references/degraded-single-dialog.md) 里对应那一段，把项目路径换成你的实际路径，连同内容一起发给 AI。三段必须分三个对话——核查不能自己查自己。
 
 **路径 C · 手动流水线**
 
@@ -177,10 +176,6 @@ WebNote/
 │   ├── image-extract/                  #   图片 OCR
 │   ├── video-extract/                  #   视频转写
 │   └── xhs-note/                       #   小红书笔记
-├── prompts/                            # 开箱即用的入口提示词
-│   ├── 入口提示词-全自动.md             # 有子代理能力的工具
-│   └── 入口提示词-单对话框.md           # 纯聊天界面（三段式）
-│
 ├── examples/                           # 一次完整运行的全部产出，建议先看
 │   └── 2026-09-03-端到端验收/
 │

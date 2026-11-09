@@ -41,10 +41,9 @@ Copy the project's `skills/` directory into your AI tool's project-level skills 
 
 **Path B · One prompt** (no install, works with any AI)
 
-- Tools with subagent support (Claude Code / CodeBuddy / Cursor) → [`prompts/入口提示词-全自动.md`](prompts/入口提示词-全自动.md)
-- Plain chat UI (ChatGPT / Claude web) → [`prompts/入口提示词-单对话框.md`](prompts/入口提示词-单对话框.md)
+`AGENTS.public.md` *is* the AI-facing entry doc — hand it over with your content, or point the AI at this repo.
 
-Copy the code block, replace the project path with yours, and send it along with your content.
+**If your tool has no subagent support** (plain chat UI, ChatGPT / Claude web): switch to Mode B and use the three-part prompt in [`degraded-single-dialog.md`](skills/webnote-workflow/references/degraded-single-dialog.md). Copy the matching block, replace the project path, and send it with your content. The three parts **must** be three separate conversations — the verifier cannot be the writer.
 
 **Path C · Manual pipeline**
 

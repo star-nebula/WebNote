@@ -102,9 +102,9 @@
 
 ### 方式二：一条提示词（不装配也能用）
 
-复制 [`prompts/入口提示词-全自动.md`](../prompts/入口提示词-全自动.md) 给你的 AI，把其中的项目路径替换成你的实际路径。
+把 [`AGENTS.public.md`](../AGENTS.public.md) 与内容一起交给 AI——它本身就是入口说明，含角色清单、可写范围与执行规则。
 
-没有 subagent 能力的聊天界面，改用 [`prompts/入口提示词-单对话框.md`](../prompts/入口提示词-单对话框.md)。
+没有 subagent 能力的聊天界面，改用模式 B 的三段式提示词：[`degraded-single-dialog.md`](../skills/webnote-workflow/references/degraded-single-dialog.md)。
 
 ### 方式三：手动文件流水线
 

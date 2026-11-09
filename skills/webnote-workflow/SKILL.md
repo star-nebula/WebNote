@@ -36,6 +36,7 @@ agent_created: true
 | **笔记匠定义** | `<项目根>/agents/distiller.md` | 第 3 步派发时 |
 | **核查官定义** | `<项目根>/agents/verifier.md` | 第 4 步派发时 |
 | 确认步骤卡 | `<项目根>/skills/webnote-workflow/references/steps/confirm.md` | 第 5 步 |
+| 模式 B 三段式提示词 | `<项目根>/skills/webnote-workflow/references/degraded-single-dialog.md` | 无 subagent 能力时 |
 | 采编工具 | `tools/*.py` | 见采编卡的路由表 |
 
 **规则**：角色定义与步骤卡是**唯一事实来源**。派发 subagent 时把对应文件交给它，**不要凭记忆复述角色要求**——复述必然走样，最容易漏掉的是铁律。
@@ -73,6 +74,8 @@ agent_created: true
 ### 模式 B · 单对话框分段（无 subagent 能力时降级）
 
 同一对话内完成采编 / 归类 / 提炼 → **在核查前停下**，提示用户把 `00/01/02` 产物与原文带到**新对话**，让新对话读 `<项目根>/agents/verifier.md` 执行核查 → 核查表带回后读 `<项目根>/skills/webnote-workflow/references/steps/confirm.md` 做确认。
+
+三段的具体提示词（用户直接复制粘贴）见 `<项目根>/skills/webnote-workflow/references/degraded-single-dialog.md`。
 
 **核查那道必须另开新对话。** 别在笔记匠那个对话里接着问。
 
