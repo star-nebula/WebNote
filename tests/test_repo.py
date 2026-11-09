@@ -12,6 +12,7 @@ import sys
 from pathlib import Path
 
 import pytest
+import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILLS = ["webnote-workflow", "web-archive", "image-extract", "video-extract", "xhs-note"]
@@ -153,3 +154,23 @@ def test_write_guard_blocks_out_of_scope():
 
     main_agent = run({"tool_name": "Write", "tool_input": {"file_path": "README.md"}})
     assert main_agent.returncode == 0, "主 agent 不该被角色边界限制"
+
+
+def test_memory_index_matches_files():
+    """记忆索引不得腐烂：每个条目文件都登记在 index.md，索引里的路径都真实存在。"""
+    mem = ROOT / "memory"
+    assert (mem / "README.md").is_file(), "memory/README.md 缺失（写入口规则）"
+    index = (mem / "index.md").read_text(encoding="utf-8")
+    files = sorted(p.name for p in (mem / "long-term").glob("*.md"))
+    for name in files:
+        assert name in index, f"memory/long-term/{name} 未登记在 memory/index.md"
+    for hit in re.findall(r"long-term/([\w\-.]+\.md)", index):
+        assert (mem / "long-term" / hit).is_file(), f"index.md 指向不存在的 {hit}"
+
+
+def test_memory_not_written_by_roles():
+    """角色不得写记忆：bot.yaml 的 write_scope 里不该出现 memory/。"""
+    data = yaml.safe_load((ROOT / "bot.yaml").read_text(encoding="utf-8"))
+    for role in data.get("roles", []):
+        scope = str(role.get("write_scope", ""))
+        assert "memory/" not in scope, f"角色 {role.get('name')} 不该有写 memory/ 的权限"

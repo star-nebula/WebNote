@@ -2,6 +2,19 @@
 
 > 从 SemanticMemory 迁入（2026-10-31）。原 claim 已归档，`--include-history` 仍可查。
 
+## 记忆分层：核心记忆进 AGENTS.md，长期记忆进 memory/
+
+**问题**：`persona/SOUL.md` 与 `AGENTS.md` 内容重叠（身份、专职角色、硬约束、汇报格式各写一遍），且 SOUL 里的落库路径还是错的（`<知识库根>/vault/Resources/`（`vault/` 早已不存在））。同时没有任何地方沉淀"跨 run 的经验"——都散在 `runs/`（过程）和知识库（产出）里。
+
+**决定**：
+
+1. **核心记忆不单独建文件**，写进 `AGENTS.md` 的「核心记忆」小节（私有块内）。理由：它必须常驻上下文，多一个文件就多一次读取、多一个漂移点，而 `AGENTS.md` 本来就是被自动加载的那一份。`persona/SOUL.md` 内容并入后删除（原稿在归档包 `webnote-role-2026-11-09.tgz`）。
+2. **长期记忆独立成 `memory/`**：`index.md` 一行一条做检索，`long-term/` 一条一文件（frontmatter 标 `date/topic/confidence/source`）。理由：记忆要按需取，整目录塞进上下文只会稀释注意力；一条一文件也让"索引腐烂"可被测试发现。
+3. **角色与技能不做合并**：`agents/` 与 `skills/` 的位置是被工具机制钉住的（`skills/<name>/SKILL.md` 是发现约定，`AGENTS.md` 是入口文件名），搬家即失去自动发现。只有长期记忆没有任何约定，才需要人为给它一个目录。
+4. 边界：`runs/` 是过程不是记忆；记忆只从 `03-核查表.md` 这类已核实的产物里提炼，且落盘要用户点头。角色（subagent）不得写记忆。
+
+**代价**：多一层目录与一条索引维护成本；换来"下次怎么做得对"有确定落点，且不用把整份历史塞进上下文。
+
 ## 角色分发：真源 + 生成物，写入边界挂在项目级 hook
 
 **问题**：同一个角色定义要同时喂给多种 agent 工具，而各工具的注册面互不兼容；手写多份薄壳后，`description` 会漂移，且薄壳里写的 `permissions.allow/deny` 在 Claude Code 里根本不是可用字段（实测 CC 2.1.310 只解析 `name/description/prompt/tools/disallowedTools/model/effort/permissionMode/mcpServers/hooks/maxTurns/...`），"核查官只能写 03-核查表.md" 因此毫无机制保障。

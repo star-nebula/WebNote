@@ -166,6 +166,7 @@ WebNote/
 ├── skills/                            # 项目内置的 AI skill（SKILL.md 只做路由，细则在 references/）
 │   ├── webnote-workflow/               # ★ 总编排 skill（AI 入口：资源索引 + 派发顺序）
 │   │   ├── SKILL.md
+│   │   ├── references/degraded-single-dialog.md   # 模式 B 三段式提示词（无 subagent 时）
 │   │   └── references/steps/           #   五步流程细则（操作卡，无契约）
 │   │       ├── collect.md              #     采编主卡：媒体分类规则 + 路由
 │   │       ├── collect-image.md        #     采编 · 图片分支
@@ -176,6 +177,10 @@ WebNote/
 │   ├── image-extract/                  #   图片 OCR
 │   ├── video-extract/                  #   视频转写
 │   └── xhs-note/                       #   小红书笔记
+├── memory/                             # ★ 长期记忆：跨 run 提炼的结论（不是过程）
+│   ├── index.md                        #   索引：一行一条，只挑相关的读全文
+│   └── long-term/                      #   一条一文件，frontmatter 标置信度与来源
+│
 ├── examples/                           # 一次完整运行的全部产出，建议先看
 │   └── 2026-09-03-端到端验收/
 │

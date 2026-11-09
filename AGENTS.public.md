@@ -61,13 +61,15 @@
 | `agents/` | 三个子角色：`classifier`（整理分类）、`distiller`（提炼笔记）、`verifier`（独立核查） | 派发 subagent 前读，把**文件路径**交给它 |
 | `bot.yaml` | 能力清单真源：角色/skill/流程/命令/各工具注册面 | 改角色注册信息、增删技能时 |
 | `.claude/agents/` | Claude Code 的注册面，**生成物**（`bot.yaml` + `agents/*.md` → 勿手改） | 只由 `doctor.py --wire` 写入 |
+| `memory/` | 长期记忆：跨 run 提炼的结论，`long-term/` 一条一文件 + `index.md` 索引 | 开工前扫索引；收尾时沉淀新结论（用户点头后写） |
+| `memory/long-term/` | 单条记忆（格式见 `memory/README.md`） | 只读与本次相关的那几条，不整目录读 |
 | `tools/` | 采编加速器（Python 标准库为主，可选依赖按需装）+ `doctor.py`（自检/接线）+ `hooks/guard_write.py`（写入守卫）+ `sync-agents-public.py` | 采集、转写、拓存时 |
 | `tools/_migrations/` | 一次性维护脚本（已跑过，不进运行时） | 只有做结构迁移、查断链、脱敏示例时才用 |
 | `tests/` | 仓库不变量（pytest）+ web-archive 真机回归 + 离线夹具 | 改完结构或流程后跑 |
 | `examples/` | 一次完整运行的全部产物 | 想知道产出长什么样 |
 | `docs/` | 架构 `architecture.md`（v3 现行）、历史版本 `versions/`、决策 `decisions.md`、外部手册 `vendor/` | 理解整体设计 / 追溯版本 |
 | `config/` | 运行时默认参数（公开，不含机器路径） | 改阈值、媒体后缀、核查规则时 |
-| `persona/` | 角色原始文本与头像（本地私有，不入 git） | 只在需要追溯到历时读 |
+| `persona/` | 角色头像等原件（本地私有，不入 git） | 一般不用读 |
 
 `agents/`、`skills/webnote-workflow/references/steps/`、`tools/` 在运行中是权威，与 `README.md` 的表述冲突时以它们为准；
 与**用户最新直接指令**冲突时以用户为准。
