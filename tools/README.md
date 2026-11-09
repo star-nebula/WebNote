@@ -38,9 +38,18 @@
 | `extract-video-asr.py <URL\|--input 本地文件> [--model small\|large-v3-turbo] [--max-duration N]` | 下载视频音频（或读本地文件）并用 ASR 转写语音 | yt-dlp, faster-whisper, ffmpeg | 分钟级 |
 | `extract-video-frames.py --input <本地视频> [--t-start S] [--t-end S] [--max-frames N]` | **视频画面采集**：抽帧 + 本地 RapidOCR 取逐字文字 + 云端 DeepSeek Vision 理解画面语义，按时间戳对齐 | ffmpeg, rapidocr-onnxruntime, DEEPSEEK_API_KEY | 分钟级 |
 | `ds_vision.py <图片...> [--times ...]` | 单批图片送 DeepSeek Vision 理解（被 extract-video-frames 内部调用，每 14 帧一批） | DEEPSEEK_API_KEY | 秒级 |
-| `extract-xhs.py <URL\|note_id>` | 拉取小红书笔记 + 图片/视频落盘（需 Cookie） | xhs, requests | 秒级 |
 | `extract-image-ocr.py --input <目录\|JSON>` | 对图片做本地 OCR（RapidOCR，与视频画面采集统一后端） | rapidocr-onnxruntime | 秒~分钟级 |
-| `run-xhs-note.py <URL\|note_id>` | 单条笔记流水线驱动：fetch→OCR→ASR→组装 Markdown | 上述三者 | 分钟级 |
+
+## 自检与维护
+
+| 工具 | 用途 | 依赖 | 进 CI |
+|---|---|---|---|
+| `check-env.py` | 当前机器能跑哪些媒体分支、缺什么怎么补 | 无 | 否 |
+| `check-links.py` | 全仓 Markdown 相对链接 | 无 | 是 |
+| `check_vendor.py [--online]` | 外部技能副本是否还是上游那份 | `gh` 或 `GITHUB_TOKEN`（仅 --online） | 是（离线） |
+| `sync-agents-public.py [--check]` | 由私有 `AGENTS.md` 生成 `AGENTS.public.md` | 无 | 是（--check） |
+
+`_migrations/` 里是已跑过的一次性脚本，不进运行时。
 
 ## ASR 工具说明
 
@@ -90,7 +99,7 @@ python extract-video-asr.py <URL>
 
 `extract-video-frames.py` 用于**画面含文字/语义信息**的视频（教程、课程、PPT 录屏、代码演示等）——这类视频的价值常在画面上（提示词原文、界面文字、操作步骤），ASR 语音转写覆盖不到。
 
-> 📌 配套 skill 见项目根 `skills/`：`video-extract/`（视频，本工具所在）、`image-extract/`（图片）、`xhs-note/`（小红书）。含触发判断、处理步骤、坑，接入 AI 时按内容类型加载对应 skill。
+> 📌 配套 skill 见项目根 `skills/`：`video-extract/`（视频，本工具所在）、`image-extract/`（图片）。含触发判断、处理步骤、坑，接入 AI 时按内容类型加载对应 skill。
 
 **工作流程**：
 
@@ -141,47 +150,3 @@ python extract-video-frames.py --input video.mp4 --out result.json
 
 ---
 
-## 小红书笔记流水线（XHS，纯本地）
-
-将「小红书图文 / 视频笔记 → 可本地保存的文档」拆成三个确定性工具 + 一个驱动，最终产出 Markdown。**纯本地离线，数据不出本机**；唯一外部依赖是拉取用的小红书登录 Cookie（仅 API 调用需要，图片/视频为公开 CDN 无需 Cookie）。
-
-**链路**：
-
-```
-run-xhs-note.py <URL>
-  ├─ 1. extract-xhs.py      拉取 note_card + 下载图片/视频到 <work_dir>/
-  ├─ 2. extract-image-ocr.py 对 images/ 做本地 OCR（RapidOCR）
-  ├─ 3. extract-video-asr.py --input <video> 对视频做本地 ASR（faster-whisper）
-  └─ 4. 组装 <work_dir>/note.md（标题/描述/标签/逐图OCR/视频转写）
-```
-
-**快速开始（单条）**：
-
-```bash
-# 0) 准备 Cookie（三选一）
-#    a. 环境变量：  export XHS_COOKIE="a1b2...; web_session=..."
-#    b. 同目录 cookie.txt
-#    c. 命令行 --cookie "..."
-#
-# 1) 安装依赖
-pip install xhs requests rapidocr-onnxruntime   # OCR 需含 rapidocr 的解释器（默认 3.13 无，建议独立 venv 并用 --ocr-python 指定）
-#    ASR 需 faster-whisper + ffmpeg（已有）
-
-# 2) 跑单条
-python run-xhs-note.py "https://www.xiaohongshu.com/explore/<note_id>" \
-  --asr-model large-v3-turbo
-```
-
-**输出**：`<work_dir>/note.md` 一份自包含 Markdown（图片以相对路径引用，可随目录一并归档进 Obsidian / 站点）。
-
-**三个工具各自的契约**（均输出 JSON 到 stdout，兼容统一契约）：
-
-- `extract-xhs.py`：扩展字段 `note_id / note_type / title / desc / tags / images[] / video / work_dir`
-- `extract-image-ocr.py`：扩展字段 `per_image[{file,text}]`
-- `extract-video-asr.py`：新增 `--input <本地文件>` 跳过下载；其余不变
-
-**已知限制**：
-
-- 小红书反爬依赖登录态签名，**Cookie 过期需手动更新**（触发风控会返回 SignError / IPBlockError）。
-- 图片 OCR 对艺术字、手写体、极长图可能漏识；纯本地无云端兜底。
-- 视频转写为语音内容，不含画面内文字（画面文字仍需图片 OCR）。

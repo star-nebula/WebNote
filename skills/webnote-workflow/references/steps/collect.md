@@ -27,7 +27,6 @@
 | 文档 | `extract-document.py <文件路径>` | — |
 | 图片 | OCR →（可选）Vision | [collect-image.md](collect-image.md) |
 | 视频 / 音频 | 页面文本 → ASR → 画面 | [collect-video-audio.md](collect-video-audio.md) |
-| 小红书 | `run-xhs-note.py <URL>`（需 Cookie） | 加载 `skills/xhs-note/` |
 | 无法判断 | `extract-webpage.py <URL>` 尽力读取 | — |
 
 **只加载命中的分支卡。** 处理一个 PDF 时不需要知道 ASR 怎么跑。

@@ -37,4 +37,4 @@
 2. 标题层级、列表、引用、表格行列、代码块语言和阅读顺序保留；
 3. 报告窗口数、块数、表格数、图片数、代码块数与保存路径；
 4. 任何漏采、降级或未验证站点必须显式说明。
-5. 修改脚本后运行 `powershell -File tests/test-web-archive.ps1`；测试覆盖钉钉、飞书、普通 HTML、登录墙、合并单元格、未知代码语言和 Mermaid。
+5. 修改脚本后运行 `powershell -File tests/manual/test-web-archive.ps1`；测试覆盖钉钉、飞书、普通 HTML、登录墙、合并单元格、未知代码语言和 Mermaid。

@@ -3,18 +3,14 @@
 
 # WebNote · 唯一入口
 
-本仓是「网页笔记工作流」的唯一来源：角色、流程、技能、工具、范例都在这里。
+本仓是「网页笔记工作流」的唯一来源：角色、流程、技能、工具都在这里。
 不存在第二份角色目录——要改流程就改本仓，本文件是 agent 的入口。
 
 按下面顺序读，不要凭记忆复现任何定义。
 
 ## 本项目提供什么（任何工具通用）
 
-下面这段由 `bot.yaml` 生成，是本仓全部能力的清单：
-
-<!-- bot:start 由 bot.yaml 生成，勿手改；改完跑 python tools/doctor.py --wire -->
-
-角色（需要时读定义文件，按其 reads / writes / forbidden 执行）：
+**角色**——读定义文件，按它的 `reads` / `writes` / `forbidden` 执行：
 
 | 角色 | 定义 | 可写 | 独立上下文 |
 |---|---|---|---|
@@ -22,77 +18,60 @@
 | `distiller` | `agents/distiller.md` | `runs/*/02-笔记.md` | 否 |
 | `verifier` | `agents/verifier.md` | `runs/*/03-核查表.md` | 必须 |
 
-技能（开工先读对应 SKILL.md，只做路由）：
+**技能**——开工先读对应 `SKILL.md`（只做路由，细则在 `references/`）：
 
-- `webnote-workflow` → `skills/webnote-workflow/SKILL.md`
-- `web-archive` → `skills/web-archive/SKILL.md`
-- `image-extract` → `skills/image-extract/SKILL.md`
-- `video-extract` → `skills/video-extract/SKILL.md`
-- `xhs-note` → `skills/xhs-note/SKILL.md`
+- `webnote-workflow` → `skills/webnote-workflow/SKILL.md`（总编排）
+- `web-archive` → `skills/web-archive/SKILL.md`（防复制页 / 云文档无损拓存）
+- `image-extract` → `skills/image-extract/SKILL.md`（图片 OCR + 画面语义）
+- `video-extract` → `skills/video-extract/SKILL.md`（视频 ASR + 抽帧）
 
-外部技能（真源不在本仓，别改内容，按需读）：
+**外部技能**（真源不在本仓，读可以，别改内容）：
 
-- `skills/browser-skill` ← https://github.com/Tencent/BrowserSkill @ e380cbc（快照 2026-11-09，SKILL.md + references/）
+- `skills/browser-skill` ← https://github.com/Tencent/BrowserSkill @ `e380cbc`（快照 2026-11-09，`SKILL.md` + `references/`；来源与刷新见 `bot.yaml` 的 `vendored:`）
 
-流程：
-- `lean`（精简流程）：取原文 → 分类 → 提炼 → 核查 → 确认
-- `full`（完整流程）：采编清单 → 整理分类 → 笔记提炼 → 独立核查 → 人工确认
-
-命令：
-- `python tools/doctor.py`  — doctor
-- `python tools/doctor.py --wire`  — wire
-- `python tools/doctor.py --check`  — check
-- `python tools/check-env.py`  — check_env
-- `python -m pytest tests -q`  — test
-<!-- bot:end -->
+**产出格式**：`runs/_template/` 五份空骨架是唯一契约，起新 run 整目录复制，表头不改。
 
 **怎么用（不依赖任何工具的注册表）：**
 
-1. 需要某个角色时，读上表里它的定义文件，按 `reads` / `writes` / `forbidden` 执行。
-   你的工具若不支持子 agent，就自己扮演该角色，**一次只扮一个**。
-2. 标「必须独立上下文」的角色，必须在**不携带上文**的情况下执行（新会话，或明确声明
-   「以下判断不参考我此前的结论」）。做不到就按 `agents/verifier.md` 的降级声明显式标注。
+1. 需要某个角色时，读它的定义文件，按契约执行。你的工具不支持子 agent，就自己扮演，**一次只扮一个**。
+2. 标「必须独立上下文」的角色，必须在不携带上文的情况下执行（新会话，或明确声明「以下判断不参考我此前的结论」）。做不到就按 `agents/verifier.md` 的降级声明**显式标注**。
 3. 表里的「可写」是硬边界：越界的一律不写，把内容作为回复交回主 agent。
-4. 想拿到工具级硬约束（工具白名单、写入拦截、真隔离），跑 `python tools/doctor.py --wire`；
-   只想知道本工具缺什么，跑 `python tools/doctor.py`。
+
+> 这套结构只依赖一件事：**能读文件就够**。工具支持 skill / subagent 注册时可以更省事，但不注册不影响流程成立——注册只是把"靠遵守"变成"靠机制"。
 
 ## 目录职责
 
 | 路径 | 是什么 | 什么时候读 |
 |---|---|---|
-| `skills/` | 五个技能：`webnote-workflow`（总编排）、`web-archive`、`image-extract`、`video-extract`、`xhs-note` | 开工先读对应 `SKILL.md`（只做路由），细则在 `references/` |
-| `skills/webnote-workflow/references/steps/` | 五步流程细则（collect / collect-image / collect-video-audio / collect-web-archive / confirm） | 手动流水线（路径 C）逐条读 |
-| `agents/` | 三个子角色：`classifier`（整理分类）、`distiller`（提炼笔记）、`verifier`（独立核查） | 派发 subagent 前读，把**文件路径**交给它 |
-| `skills/browser-skill/` | 外部依赖（`bsk`）说明的副本，**由 skillshare `mode: copy` 同步，勿手改** | 只在要改 `extract-webpage.py` 的调用方式时读 |
-| `.skillshare/config.yaml` | 副本的来源声明：技能库 `browser-skill` → `skills/`，`mode: copy`（不是链接） | 刷新副本时（`skillshare sync -p`） |
-| `bot.yaml` | 能力清单真源：角色/skill/流程/命令/各工具注册面 | 改角色注册信息、增删技能时 |
-| `.claude/agents/` | Claude Code 的注册面，**生成物**（`bot.yaml` + `agents/*.md` → 勿手改） | 只由 `doctor.py --wire` 写入 |
-| `memory/` | 长期记忆：跨 run 提炼的结论，`long-term/` 一条一文件 + `index.md` 索引 | 开工前扫索引；收尾时沉淀新结论（用户点头后写） |
-| `memory/long-term/` | 单条记忆（格式见 `memory/README.md`） | 只读与本次相关的那几条，不整目录读 |
-| `tools/` | 采编加速器（Python 标准库为主，可选依赖按需装）+ `doctor.py`（自检/接线）+ `hooks/guard_write.py`（写入守卫）+ `sync-agents-public.py` | 采集、转写、拓存时 |
-| `tools/_migrations/` | 一次性维护脚本（已跑过，不进运行时） | 只有做结构迁移、查断链、脱敏示例时才用 |
-| `tests/` | 仓库不变量（pytest）+ web-archive 真机回归 + 离线夹具 | 改完结构或流程后跑 |
-| `docs/history/` | 历史存档（旧版范例、已废弃格式），**不更新、不照抄**：留着只为说明规则来由 | 想懂「为什么这么规定」 |
-| `runs/<日期-主题>/` | 一次运行的五个产物（本地，`gitignore` 忽略） | 只在本次运行内读 |
-| `runs/_template/` | 新 run 的空骨架（**进 git、只读**；表头是硬契约，测试会比对） | 起新 run 时整个目录复制成 `runs/<日期-主题>/`，再填 |
-| `docs/` | 架构 `architecture.md`（v3 现行）、历史版本 `versions/`、决策 `decisions.md`、外部手册 `vendor/` | 理解整体设计 / 追溯版本 |
-| `config/` | 运行时默认参数（公开，不含机器路径） | 改阈值、媒体后缀、核查规则时 |
-| `persona/` | 角色头像等原件（本地私有，不入 git） | 一般不用读 |
+| `skills/` | 四个自有技能 + 一个外部副本 | 开工先读对应 `SKILL.md`，细则在 `references/` |
+| `skills/webnote-workflow/references/steps/` | 五步流程细则（collect / collect-image / collect-video-audio / collect-web-archive / confirm） | 手动流水线逐条读 |
+| `skills/webnote-workflow/references/degraded-single-dialog.md` | 模式 B 三段式（无 subagent 时） | 工具开不了新会话时 |
+| `agents/` | 三个子角色定义，平台无关，唯一真源 | 派发前读，把**文件路径**交给它 |
+| `skills/browser-skill/` | 外部技能副本（`bsk` CLI 说明），**勿手改** | 只在改 `extract-webpage.py` 调用方式时读 |
+| `.skillshare/config.yaml` | 副本来源声明：技能库 `browser-skill` → `skills/`，`mode: copy` | 刷新副本时（`skillshare sync -p`） |
+| `bot.yaml` | 只记一件事：外部技能的上游 / commit / 快照 | 刷新副本或查"这份是哪一代" |
+| `tools/` | 采编加速器（标准库为主，可选依赖按需装）+ 自检脚本 | 采集、转写、拓存、自检时 |
+| `tools/_migrations/` | 一次性维护脚本（已跑过，不进运行时） | 只有做结构迁移或脱敏历史件时才用 |
+| `tests/` | 仓库不变量（pytest，进 CI） | 改结构、改表头、改生成逻辑后跑 |
+| `tests/manual/` | 需要真实浏览器的回归与离线夹具（不进 CI） | 改动 `web-archive` 脚本后手动跑 |
+| `runs/_template/` | 新 run 的空骨架（**进 git、只读**；表头是硬契约） | 起新 run 时整目录复制成 `runs/<日期-主题>/` |
+| `runs/<日期-主题>/` | 一次运行的五个产物（本地，gitignore 忽略） | 只在本次运行内读 |
+| `docs/` | 架构 `architecture.md`（现行）、`versions/` 已发表旧版、`decisions.md` 决策、`history/` 历史存档（勿照抄） | 理解整体设计 / 追溯缘由 |
+| `persona/` | 角色头像原件（本地私有，不入 git） | 一般不用读 |
 
-`agents/`、`skills/webnote-workflow/references/steps/`、`tools/` 在运行中是权威，与 `README.md` 的表述冲突时以它们为准；
-与**用户最新直接指令**冲突时以用户为准。
+`agents/`、`skills/webnote-workflow/references/steps/`、`tools/` 在运行中是权威，与 `README.md` 表述冲突时以它们为准；与**用户最新直接指令**冲突时以用户为准。
 
 ## 三条使用路径
 
 - **A 装配技能**：把 `<本仓>/skills/` 链进工具的 skill 目录（Claude Code → `.claude/skills/`；Codex、pi 等按各自机制），之后自然对话即触发。
-- **B 提示词**：把 `AGENTS.public.md` 与内容一起交给 AI（它本身就是入口说明）。没有 subagent 能力时用模式 B 三段式，提示词在 `skills/webnote-workflow/references/degraded-single-dialog.md`。
+- **B 提示词**：把 `AGENTS.public.md` 与内容一起交给 AI（它本身就是入口说明）。没有 subagent 能力时用模式 B 三段式。
 - **C 手动**：按 `skills/webnote-workflow/references/steps/` 五步走，每步只加载当步定义。
 
-先跑 `python tools/check-env.py`：缺依赖只影响对应媒体（PDF OCR / 视频转写），图文流程零依赖可用。
+先跑 `python tools/check-env.py`：缺依赖只影响对应媒体，图文流程零依赖可用。
 
 ## 硬约束
 
-1. **技能优先，不凭记忆简化。** 这类任务开头加载 `webnote-workflow`；视频/音频另加 `video-extract`；防复制页、钉钉/飞书云文档、登录墙、懒加载长文另加 `web-archive` + `skills/webnote-workflow/references/steps/collect-web-archive.md`。不要因为"看起来简单"跳过技能里的步骤。
+1. **技能优先，不凭记忆简化。** 这类任务开头加载 `webnote-workflow`；视频/音频另加 `video-extract`；防复制页、钉钉/飞书云文档、登录墙、懒加载长文另加 `web-archive` + `steps/collect-web-archive.md`。不要因为"看起来简单"跳过技能里的步骤。
 2. **范围**：只做内容提取与笔记整理；无关的开发/运维工作不在本角色内，除非用户明确要求。
 3. **核查独立**：核查者必须是全新上下文，且不是笔记撰写者。做不到就按 `agents/verifier.md` 的降级声明**显式标注**，不要用一份看起来合规的表掩盖。
 4. **三条铁律**：① 正文不凭空编——提取不到就如实写「无」；② 核查独立；③ 不改写用户已有文件，命名冲突就用来源/日期后缀或另起一份；原始输入只读。
@@ -110,11 +89,11 @@
 
 1. `SKILL.md` 只做路由，细则放同目录 `references/`。
 2. 新增媒体能力：脚本进 `tools/`，并在 `tools/check-env.py` 登记「缺什么、怎么补」。
-3. 改流程：同步更新 `skills/webnote-workflow/references/steps/`、`README.md` 能力表、受影响技能，以及本文件；改完跑 `python tools/sync-agents-public.py`（重新生成公开版）与 `python -m pytest tests -q`（不变量）。
-4. 环境变量只把**键名**写进 `.env.example`，真值放 `.env`（已 gitignore）；任何真实路径、Cookie、Key 不进 `AGENTS.md` 以外的公开文件。
-4. `agents/` 是角色定义唯一来源；`.claude/agents/` 的同名三份是带 frontmatter 的适配层，改正文时两边保持一致。
-5. 不提交生成物与本机状态：`runs/`、`.workbuddy/`、`.memory/`、`.venv-asr/`、临时音视频。
-6. **本仓是公开仓**：只提交脱敏内容。私有路径、账号、密钥一律写在 `<!-- private:start -->` 块里，这些块不会进入公开版。
+3. **改产出格式要动两处**：`runs/_template/<文件>` 与它的规范出处（`skills/.../steps/*.md` 或 `agents/*.md`）；`test_run_template_matches_step_cards` 会比对，只改一边就红。
+4. 改流程：同步更新 `steps/`、`README.md` 的能力表、受影响技能，以及本文件；改完跑 `python tools/sync-agents-public.py` 与 `python -m pytest tests -q`。
+5. 环境变量只把**键名**写进 `.env.example`，真值放 `.env`（已 gitignore）；任何真实路径、Cookie、Key 不进公开文件。
+6. 不提交生成物与本机状态：`runs/`、`.workbuddy/`、`.memory/`、`.venv-asr/`、临时音视频。
+7. **本仓是公开仓**：只提交脱敏内容。私有路径、账号、密钥一律写在 `<!-- private:start -->` 块里，这些块不会进入公开版。
 
 ## 边界
 
@@ -124,11 +103,8 @@
 
 ## 自检
 
-- `python tools/doctor.py` —— 本工具能用什么、缺什么（角色 / 技能 / 生成物 / 写入守卫）
-- `python tools/doctor.py --wire` —— 生成注册面与挂上守卫（幂等；改完 `bot.yaml` 或 `agents/*.md` 后跑）
-- `python tools/doctor.py --check` —— 生成物是否与真源一致（手改 `.claude/` 会被它打回）
 - `python tools/check-env.py` —— 当前机器能跑哪些媒体分支
-- `python tools/sync-agents-public.py --check` —— 公开版是否与私有版一致（漂移返回非 0）
-- `python -m pytest tests -q` —— 仓库不变量（角色齐全、无私有路径泄漏、守卫拦截生效）
-
-**改角色时只改两处**：`agents/<name>.md`（定义与 `description`）与 `bot.yaml`（工具白名单 / `write_scope` / 是否需要独立上下文）；然后 `--wire`。生成物永远不要手改。
+- `python tools/check-links.py` —— 全仓 Markdown 相对链接
+- `python tools/check_vendor.py` —— 外部技能副本是否还是上游那份（`--online` 才联网）
+- `python tools/sync-agents-public.py --check` —— 公开版是否与私有版一致
+- `python -m pytest tests -q` —— 仓库不变量（表头契约、泄漏扫描、外部技能完整性）

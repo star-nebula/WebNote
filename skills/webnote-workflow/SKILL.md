@@ -29,8 +29,7 @@ agent_created: true
 | **采编主卡** | `<项目根>/skills/webnote-workflow/references/steps/collect.md` | 第 1 步，必读 |
 | 采编 · 图片分支 | `<项目根>/skills/webnote-workflow/references/steps/collect-image.md` | 判断为图片时 |
 | 采编 · 视频音频分支 | `<项目根>/skills/webnote-workflow/references/steps/collect-video-audio.md` | 判断为视频/音频时 |
-| 采编 · 小红书 | `skills/xhs-note/SKILL.md` | 判断为小红书时 |
-| **采编 · 无损拓存** | `skills/web-archive/SKILL.md` | 防复制页、云文档、登录态长文、要求完整保存/归档时 |
+| 采编 · 无损拓存 | `skills/web-archive/SKILL.md` | 防复制页、云文档、登录态长文、要求完整保存/归档时 |
 | 无损拓存模式卡 | `<项目根>/skills/webnote-workflow/references/steps/collect-web-archive.md` | 进入 web-archive 分支前 |
 | **归类师定义** | `<项目根>/agents/classifier.md` | 第 2 步派发时 |
 | **笔记匠定义** | `<项目根>/agents/distiller.md` | 第 3 步派发时 |
@@ -43,7 +42,7 @@ agent_created: true
 
 ## 触发与内容确认
 
-用户给出内容（URL / 本地路径 / 已存正文）并要整理成笔记时触发。先做**内容清单确认**：逐个判断媒体格式（图文/图片/视频/音频/文档/小红书/无法判断），拿不准就问用户，不擅自猜测。
+用户给出内容（URL / 本地路径 / 已存正文）并要整理成笔记时触发。先做**内容清单确认**：逐个判断媒体格式（图文/图片/视频/音频/文档/无法判断），拿不准就问用户，不擅自猜测。
 
 ## 先选输出模式
 
@@ -55,7 +54,7 @@ agent_created: true
 
 1. 确认 `tools/` 下工具存在
 2. 内容涉及**图片语义 / 视频画面**且需要理解时：检查环境变量 `DEEPSEEK_API_KEY`，未设置则提示用户配置，不擅自跳过、不编造 Key
-3. 小红书需 Cookie（见 xhs-note skill）；浏览器页面读取走 BrowserSkill
+3. 浏览器页面读取走 BrowserSkill
 
 ## 执行模式
 

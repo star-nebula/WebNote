@@ -29,6 +29,8 @@
 3. **角色与技能不做合并**：`agents/` 与 `skills/` 的位置是被工具机制钉住的（`skills/<name>/SKILL.md` 是发现约定，`AGENTS.md` 是入口文件名），搬家即失去自动发现。只有长期记忆没有任何约定，才需要人为给它一个目录。
 4. 边界：`runs/` 是过程不是记忆；记忆只从 `03-核查表.md` 这类已核实的产物里提炼，且落盘要用户点头。角色（subagent）不得写记忆。
 
+> 后续（2026-11-09）：`memory/` 已删除，跨 run 结论只落知识库，见下方「清减」条目。
+
 **代价**：多一层目录与一条索引维护成本；换来"下次怎么做得对"有确定落点，且不用把整份历史塞进上下文。
 
 ## 角色分发：真源 + 生成物，写入边界挂在项目级 hook
@@ -44,6 +46,8 @@
 
 **代价/收益**：多一个生成步骤与一条 CI 断言；换来一份定义喂所有工具，且"越界写入"从提示词约束变成机制拦截（实测 verifier 写 `runs/x/02-笔记.md` 被拒、`runs/x/03-核查表.md` 放行）。
 
+> 后续（2026-11-09）：注册面整体退役（`doctor.py`、写入守卫、`.claude/agents/`、`bot.yaml` 的 roles/skills/flows 全部删除）。原因见下方「清减」条目——它只对一家工具生效，换工具即失效。
+
 ## WebNote 架构决策：5 Agent 精简为主会话 + 3 subagent
 
 不是每一步都需要独立的 AI 上下文。 确定性的事主会话自己干，只有真正需要独立判断的才创建 subagent：
@@ -57,6 +61,25 @@
 
 - 原 claim：`rule-webnote-direct-write`（已归档）
 - 来源：`.backup/Memory-20261029/Preferences/网页知识提取机器人-核心能力直写Obsidian.md`
+
+## 2026-11-09 · 清减：删掉没有读者的机制，只留主链
+
+**背景**：仓里 8,800 多行中约 1,400 行零收益，其中大半是同一周陆续加的：`config/default.yaml`（30 行，全仓 0 处读取）、`memory/`（48 行，索引 0 条记录）、`tests/fixtures` + `test-web-archive.ps1`（308 行，不进 CI）、`bot.yaml` 全量 + `doctor.py` + `.claude/agents` + 写入守卫（约 600 行，只对 Claude Code 生效）、小红书三件（466 行，四次运行 0 次用到）。
+
+**决定**：
+
+1. **删 `config/default.yaml`**：没有一个模块读它，`.env.example` 才是真正的键名契约。
+2. **删 `memory/`**：跨 run 结论本来就在知识库 `Projects/WebNote/Project.md`；仓里留一份空索引只是维护成本。
+3. **注册面整体退役**：删 `tools/doctor.py`、`tools/hooks/guard_write.py`、`.claude/agents/`、`.claude/settings.json` 以及对应测试；`bot.yaml` 只剩 `vendored:`。理由：它解决的是"多工具注册面互不兼容"，而实际只有一个工具在用，且写守卫依赖 CC 专有的 `agent_type` payload——换工具即失效。角色仍由 `agents/*.md` 的契约 + `AGENTS.md` 的"按路径读、自己扮演"规则承担。
+4. **`tests/fixtures` + `test-web-archive.ps1` → `tests/manual/`**：需要真实浏览器的东西不该和 CI 违约测试混在一起。
+5. **小红书链路移出**：`extract-xhs.py` / `run-xhs-note.py` / `skills/xhs-note` 打包到 `E:\Projects\archive\webnote-xhs-2026-11-09.tgz` 后删除；它与"网页笔记"主链无关，需要时另立一个 bot。
+6. **四套"能不能跑"收敛为一套**：`check-env.py` + `.env.example` 定稿，`config/` 与 doctor 的 report 消失。
+7. **`check-links.py` 从 `_migrations/` 升为 `tools/check-links.py`** 并进 CI。
+8. **文档去重**：`README` 352 → 约 150 行、`README.en` 131 → 约 100 行，五步流程只在 `docs/architecture.md` 讲全。
+
+**判据**（以后加东西前先问）：这份文件/脚本有没有一个真实的读者或执行者？没有就是设计债。机制只有在"换了工具就失效"的地方才值得写，其余靠约定与断言。
+
+**代价**：少了"任意工具读 AGENTS.md 就自动获得角色注册与写入拦截"的能力；写边界退回提示词约束（`agents/verifier.md` 的 `writes/forbidden` + 降级声明）。若将来真的多工具并用，再把注册面按需加回来——它现在是 tarball 之外的一小段 YAML，重写成本很低。
 
 ## 2026-11-09 · 新 run 用 `runs/_template/` 空骨架，不动 `examples/`
 

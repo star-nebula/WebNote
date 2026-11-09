@@ -2,130 +2,96 @@
 
 > Turns "collect → classify → distill → verify → confirm" into **a scheduler (main session) + three independent agents**. Deterministic work stays with the scheduler; only what truly needs independent judgment goes to a subagent.
 
-[中文](README.md) · [English](#quick-start)
+[中文](README.md) · [AI entry](AGENTS.public.md) · [Architecture](docs/architecture.md)
 
----
+## What this is
 
-## Quick Start
+A **trust-first** pipeline for turning web content into notes. The goal is not to produce notes faster, but to make sure you can rely on them.
 
-### First: you can use this with zero setup
+It solves exactly one problem: **stop second- or third-hand transcription from masquerading as verified fact.**
 
-The value of this project is the **workflow design and agent definitions**, not the Python scripts. The scripts are accelerators for the collection step — without them, you paste content in manually and the pipeline still runs end to end.
+## Quick start
 
-| What you want to process | What you additionally need |
+### Zero setup works
+
+The value is the **workflow design and role definitions**, not the Python scripts. Without them you paste content in manually and the pipeline still runs end to end.
+
+| What you process | What you additionally need |
 |---|---|
-| Text / articles (you supply the content) | **Nothing.** Works right after clone |
-| PDF / Word documents | `pip install pypdf python-docx` |
+| Text / articles (you supply the content) | **Nothing** |
+| PDF / Word | `pip install pypdf python-docx` |
 | Text inside images | `pip install rapidocr-onnxruntime` |
 | Video / audio speech | `pip install faster-whisper` + `ffmpeg` |
-| Image / video visual understanding | the above + `DEEPSEEK_API_KEY` |
+| Image / video understanding | the above + `DEEPSEEK_API_KEY` |
 
-Not sure what your machine can do? Run the self-check (standard library only):
-
-```bash
-python tools/doctor.py      # what this tool can use, what's missing
-python tools/check-env.py   # which media branches work on this machine
-```
-
-It prints what works, what's missing, and how to install it. **Missing capabilities only affect their media type** — no ffmpeg means no video, but the text pipeline works fine.
+Not sure what your machine can do: `python tools/check-env.py` (standard library only). Missing capabilities only affect their own media type.
 
 ### Three ways to use it
 
-**Path A · Install the skill** (recommended — set up once, triggers naturally)
-
-Copy the project's `skills/` directory into your AI tool's project-level skills dir:
-
-- WorkBuddy / Codex: `<project>/skills/` → `.workbuddy/skills/`、`.codex/skills/`
-- Claude Code: `<project>/skills/` → `.claude/skills/`, then `python tools/doctor.py --wire` for roles + write guard
-- Tool doesn't support project skills → use Path B
-
-**Path B · One prompt** (no install, works with any AI)
-
-`AGENTS.public.md` *is* the AI-facing entry doc — hand it over with your content, or point the AI at this repo.
-
-**If your tool has no subagent support** (plain chat UI, ChatGPT / Claude web): switch to Mode B and use the three-part prompt in [`degraded-single-dialog.md`](skills/webnote-workflow/references/degraded-single-dialog.md). Copy the matching block, replace the project path, and send it with your content. The three parts **must** be three separate conversations — the verifier cannot be the writer.
-
-**Path C · Manual pipeline**
-
-Walk the five steps yourself, pointing the AI at the relevant definition file each time. The output format lives in [`runs/_template/`](runs/_template/) — that is the contract.
-
-> Layering: `webnote-workflow` is the **orchestrator skill**; the three content pipelines live in `skills/image-extract`, `skills/video-extract`, `skills/xhs-note`, loaded by content type during collection. Five-step details: [docs/architecture.md](docs/architecture.md).
-
----
-
-## Overview
-
-WebNote is a **trust-first** pipeline. Its goal is not to produce notes faster, but to turn web content into knowledge you can actually rely on.
-
-```
-Scheduler (your AI tool)
-├── 1. Collection      (scheduler itself — rules + CLI tools)
-├── 2. Classifier      (subagent — 4-way classification)
-├── 3. Distiller       (subagent — key points, each tagged with source type)
-├── 4. Verifier        (FRESH subagent — three-state verification)
-└── 5. Confirmation    (scheduler itself — proposal, all pending)
-```
-
-Only **3 subagents**, not 5 — the scheduler handles the deterministic steps itself.
-
-### Agent definitions are files, not prose
-
-Each agent lives in its own file under `agents/` at the project root, with a frontmatter contract (`context` / `reads` / `writes` / `forbidden`):
-
-```
-agents/                       project-root, platform-neutral, single source of truth
-├── classifier.md             Classifier — 4-way classification
-├── distiller.md              Distiller  — key points + source-type tags
-└── verifier.md               Verifier   — three-state check (context: fresh)
-skills/webnote-workflow/references/steps/
-├── collect.md / collect-image.md / collect-video-audio.md / collect-web-archive.md / confirm.md
-                              step cards (no contract), routed by SKILL.md
-```
-
-**Hand the definition file to the subagent. Don't paraphrase the role from memory** — paraphrasing drops the hard rules first, and those are exactly the parts that must not be dropped.
-
-`agents/` is a **workflow asset** at the project root; the step cards live in `skills/webnote-workflow/references/steps/`. `skills/webnote-workflow/SKILL.md` is just a router that points to them via project-root-relative paths.
-
-**Registration surfaces (`bot.yaml` → `.claude/`)**: role identity lives in `agents/*.md`; what each tool needs to *register* them (tool allow-list, write scope, whether a fresh context is required) lives in `bot.yaml`. `python tools/doctor.py --wire` generates `.claude/agents/*.md` plus a `PreToolUse` hook in `.claude/settings.json`, so the Verifier's write boundary is **enforced** — an out-of-scope write is rejected by the hook instead of merely discouraged by the prompt. `--check` fails CI if a generated file drifts from the sources.
-
-Nothing there is hand-written, and nothing is copied to a global directory: the role definition always points back to `agents/<name>.md`.
-
-### Execution modes
-
-1. **Mode A · Multi-agent** (recommended): scheduler runs collection + confirmation, spawns 3 independent subagents. The Verifier must be a **fresh context**, never the distiller — an agent cannot audit its own fabrication.
-2. **Mode B · Single-dialog** (fallback when subagents aren't available): run collection + classify + distill in one dialog, then **stop** — verification must happen in a **new dialog**. If that's impossible, make the AI write an explicit degradation notice (see `agents/verifier.md`); *an unmarked degradation is a compliant-looking table hiding a real risk*.
-
-### Why verification has three states, not two
-
-The Distiller tags every key point with a **source type**, and the Verifier judges evidence strength from it:
-
-| Source type | Meaning |
-|---|---|
-| `原文` / `original` | Text extracted by a tool or supplied by you |
-| `OCR` | Text recognized from an image / video frame |
-| `ASR` | Speech-to-text transcript |
-| `Vision` | A model's description of the picture |
-
-Hence three verification states:
-
-| State | Meaning | Safe to store permanently? |
+| Path | For | How |
 |---|---|---|
-| Verified (direct quote) | Found in original text, locatable | Yes |
-| Verified (transcribed source) | Found in OCR/ASR/Vision output, not traced back to the raw audio/video | **Review it yourself first** |
-| Suspicious / unsupported | No source found, or the note says more than the original | No |
+| **A Install the skill** | Tools with project-level skills | Link `<repo>/skills/` into the tool's skills dir; conversation triggers it naturally afterwards |
+| **B One prompt** | Any AI | Hand [`AGENTS.public.md`](AGENTS.public.md) over together with your content |
+| **C Manual** | Step-by-step control | Walk [`steps/`](skills/webnote-workflow/references/steps/), loading one definition per step |
 
-**Why two states fail**: there is a historical case under [`docs/history/`](docs/history/2026-09-03-two-state-example/). A video note says "62.89 million views", sourced from frame OCR — but the OCR text actually misread "收藏/点赞" as "收款/点费". The numbers came from recognition noise.
+No subagent support (ChatGPT / Claude web): use Mode B, the three-part prompt in [`degraded-single-dialog.md`](skills/webnote-workflow/references/degraded-single-dialog.md). The three parts **must** be three separate conversations — the verifier cannot be the writer.
 
-With only two states, the Verifier marks it "verified" and buries the caveat in a remarks section — the part you're most likely to skip. That number then enters your knowledge base looking confirmed.
+### Start a run
 
-Three states marks it **verified (transcribed source)**, so you know to check the original footage. The note isn't wrong — one link in its evidence chain is model output. You deserve to know that, then decide whether it's worth verifying.
+```bash
+cp -r runs/_template runs/2026-11-09-topic     # headers are a contract — don't edit them
+```
 
-**The entire point of this pipeline is to stop second- or third-hand transcription from masquerading as verified fact.**
+The five files are filled in order by scheduler / classifier / distiller / verifier / scheduler. Originals are never copied or moved — only their paths are recorded in `00`.
 
-### Confirmation boundary
+## Why verification has three states, not two
 
-Any delete / archive / publish / long-term-memory write stops at "pending confirmation" — the AI proposes, you press the button.
+The distiller tags every key point with a **source type** (`原文` / `OCR` / `ASR` / `Vision`); the verifier judges evidence strength from that tag:
 
-### License
+| State | Meaning | Safe to store? |
+|---|---|---|
+| Verified (direct quote) | Found in the original text, locatable | Yes |
+| Verified (transcribed source) | Found in OCR/ASR/Vision output, not traced back to the raw audio/video | **Review it yourself** |
+| Suspicious | No source found, or the note says more than the original | No |
 
-MIT — see [LICENSE](LICENSE). Design credit: [Axton Liu, "Agent OS 的第一课"](https://www.axtonliu.ai/newsletters/ai-2/posts/agent-os-workstation-division).
+A real case: a note claimed "62.89 million views", sourced from frame OCR — but the OCR had misread "收藏/点赞" as "收款/点费". With only two states, the verifier marks it "verified" and buries the caveat in a remarks section you are likely to skip. Three states marks it **verified (transcribed source)**: the note isn't wrong, but one link in its evidence chain is model output, and you deserve to know that.
+
+Case study: [`docs/history/`](docs/history/2026-09-03-two-state-example/). **That is an archive with an obsolete format — do not copy its headers.**
+
+## Layout
+
+```
+WebNote/
+├── AGENTS.public.md      # AI entry (generated from AGENTS.md)
+├── bot.yaml              # the one machine-readable fact: upstream of vendored skills
+├── agents/               # three role definitions, platform-neutral, single source of truth
+├── skills/               # SKILL.md routes; details live in references/
+│   ├── webnote-workflow/ #   orchestrator + steps/ + single-dialog fallback
+│   ├── web-archive/      #   lossless archiving of copy-protected / cloud docs
+│   ├── image-extract/    #   OCR + visual semantics
+│   ├── video-extract/    #   ASR + frame sampling
+│   └── browser-skill/    #   vendored external skill (Tencent/BrowserSkill) — don't edit
+├── runs/_template/       # ★ five empty skeletons: the only output-format contract
+├── tools/                # collection accelerators + self-checks (all deps optional)
+├── tests/                # repo invariants (CI) · tests/manual/ needs a real browser
+├── docs/                 # architecture · decisions · versions/ · history/ (obsolete, don't copy)
+└── .env.example          # env var names only
+```
+
+## Execution modes
+
+| Mode | When | Split |
+|---|---|---|
+| **A Multi-agent** | Tool supports subagents (recommended) | Scheduler does collection + confirmation; three subagents classify / distill / verify; the verifier shares zero context with the distiller |
+| **B Single-dialog** | Tool can't open a new session | Collect + classify + distill in one dialog → **stop** → verify in a new conversation → confirm |
+| **C Lossless archive** | Copy-protected, cloud docs, login-walled pages | Archive only, no summarizing; distill separately afterwards |
+
+Verification is the safety gate: **an agent cannot audit itself.** If a fresh context is impossible, require the explicit degradation notice in `agents/verifier.md` — an unmarked degradation is a compliant-looking table hiding a real risk.
+
+## Confirmation boundary
+
+Any delete / archive / publish / long-term-memory write stops at "pending confirmation". The AI may think and propose without limit; anything that *lands* waits for your keypress.
+
+## License
+
+MIT — see [LICENSE](LICENSE). Design credit: [Axton Liu, "Agent OS 的第一课"](https://www.axtonliu.ai/newsletters/ai-2/posts/agent-os-workstation-division). Vendored tool: [BrowserSkill](https://github.com/Tencent/BrowserSkill).

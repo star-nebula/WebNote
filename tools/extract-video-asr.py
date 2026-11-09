@@ -116,7 +116,7 @@ def download_audio(url, output_template, max_duration_min=None):
 def prepare_audio_local(path, tmpdir):
     """
     将本地音视频文件用 ffmpeg 转成 16kHz 单声道 WAV，供 faster-whisper 转写。
-    用于 extract-xhs.py 已下载到本地的视频，跳过 yt-dlp 下载。
+    用于已下载到本地的视频文件，跳过 yt-dlp 下载。
     """
     wav_path = os.path.join(tmpdir, 'audio.wav')
     log(f'转换本地文件: {path}')

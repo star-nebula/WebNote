@@ -21,9 +21,6 @@ jobs:
       - name: 仓库不变量
         run: python -m pytest tests -q
 
-      - name: 生成物与真源一致（bot.yaml → .claude/）
-        run: python tools/doctor.py --check
-
       - name: 外部技能来源与完整性（离线，不联网）
         run: python tools/check_vendor.py
 
@@ -31,4 +28,4 @@ jobs:
         run: python -m compileall -q tools tests
 
       - name: Markdown 相对链接
-        run: python tools/_migrations/check-links.py
+        run: python tools/check-links.py

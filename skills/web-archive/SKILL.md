@@ -106,7 +106,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/render-md.ps1 `
 - 抽样比对：**首段 / 中段 / 末段**各一处；核对表格行列数、代码块数量
 - 报告统计：窗口数、块数、表格数、图片数、代码块数
 - 交付时写明保存路径；**有任何漏采或降级必须显式说明**
-- 自动化回归：`powershell -File tests/test-web-archive.ps1`
+- 自动化回归：`powershell -File tests/manual/test-web-archive.ps1`
 
 ## 输出契约
 

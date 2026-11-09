@@ -7,7 +7,7 @@ Agent 0 · 采编 — 图片本地 OCR 工具（纯本地，无云端）
 与视频画面采集（extract-video-frames.py）共用同一套 RapidOCR 后端。
 
 用法：
-  python extract-image-ocr.py --input <图片目录 | extract-xhs.py 的 JSON>
+  python extract-image-ocr.py --input <图片目录 | JSON 清单>
   python extract-image-ocr.py --images img1.png img2.png
 
 依赖：
@@ -75,7 +75,7 @@ def safe_relpath(path, base):
 
 def main():
     parser = argparse.ArgumentParser(description='图片本地 OCR（RapidOCR）')
-    parser.add_argument('--input', help='图片目录，或 extract-xhs.py 输出的 JSON 文件')
+    parser.add_argument('--input', help='图片目录，或包含图片路径的 JSON 清单')
     parser.add_argument('--images', nargs='+', help='一张或多张图片路径')
     args = parser.parse_args()
 

@@ -3,8 +3,8 @@
 """检查项目内 Markdown 文件的相对链接与 SKILL.md 契约字段引用是否都指向真实文件。
 
 用法：
-    python _agent_scripts/check-links.py
-    python _agent_scripts/check-links.py --root <项目根>
+    python tools/check-links.py
+    python tools/check-links.py --root <项目根>
 
 只检查 Markdown 链接 [x](path)，跳过外链、锚点和 mailto。
 """
@@ -43,8 +43,8 @@ def main():
     parser.add_argument("--root", default=None, help="项目根目录，默认取本文件的上级的上级")
     args = parser.parse_args()
 
-    # 本脚本位于 <项目根>/_agent_scripts/，故上溯两级
-    root = Path(args.root) if args.root else Path(__file__).resolve().parent.parent.parent
+    # 本脚本位于 <项目根>/tools/，故上溯两级
+    root = Path(args.root) if args.root else Path(__file__).resolve().parent.parent
     root = root.resolve()
 
     # 跳过私有记忆目录（不属于开源发布内容，且内部文件名引用随时会过时）
