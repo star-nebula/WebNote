@@ -7,9 +7,9 @@ runs/*
 !runs/_template/
 !runs/_template/**
 
-# ===== 项目私有记忆 / Agent 数据 =====
+# ===== Agent 工具的私有位（会话重建，本机产物，不进仓）=====
+# .workbuddy/ 由 WorkBuddy 自己创建；记忆本体在知识库 Projects/WebNote/，不在仓里
 .workbuddy/
-.memory/
 
 # ===== 系统 / 编辑器杂项 =====
 .DS_Store

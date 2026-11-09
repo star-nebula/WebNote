@@ -92,7 +92,7 @@
 3. **改产出格式要动两处**：`runs/_template/<文件>` 与它的规范出处（`skills/.../steps/*.md` 或 `agents/*.md`）；`test_run_template_matches_step_cards` 会比对，只改一边就红。
 4. 改流程：同步更新 `steps/`、`README.md` 的能力表、受影响技能，以及本文件；改完跑 `python tools/sync-agents-public.py` 与 `python -m pytest tests -q`。
 5. 环境变量只把**键名**写进 `.env.example`，真值放 `.env`（已 gitignore）；任何真实路径、Cookie、Key 不进公开文件。
-6. 不提交生成物与本机状态：`runs/`、`.workbuddy/`、`.memory/`、`.venv-asr/`、临时音视频。
+6. 不提交生成物与本机状态：`runs/`、`.workbuddy/`、`.venv-asr/`、临时音视频。
 7. **本仓是公开仓**：只提交脱敏内容。私有路径、账号、密钥一律写在 `<!-- private:start -->` 块里，这些块不会进入公开版。
 
 ## 边界
