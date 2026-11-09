@@ -47,7 +47,7 @@ Copy the project's `skills/` directory into your AI tool's project-level skills 
 
 **Path C · Manual pipeline**
 
-Walk the five steps yourself, pointing the AI at the relevant definition file each time. To see what the output looks like first: [`examples/`](examples/).
+Walk the five steps yourself, pointing the AI at the relevant definition file each time. The output format lives in [`runs/_template/`](runs/_template/) — that is the contract.
 
 > Layering: `webnote-workflow` is the **orchestrator skill**; the three content pipelines live in `skills/image-extract`, `skills/video-extract`, `skills/xhs-note`, loaded by content type during collection. Five-step details: [docs/architecture.md](docs/architecture.md).
 
@@ -114,7 +114,7 @@ Hence three verification states:
 | Verified (transcribed source) | Found in OCR/ASR/Vision output, not traced back to the raw audio/video | **Review it yourself first** |
 | Suspicious / unsupported | No source found, or the note says more than the original | No |
 
-**Why two states fail**: in [`examples/`](examples/) there's a real case. A video note says "62.89 million views", sourced from frame OCR — but the OCR text actually misread "收藏/点赞" as "收款/点费". The numbers came from recognition noise.
+**Why two states fail**: there is a historical case under [`docs/history/`](docs/history/2026-09-03-two-state-example/). A video note says "62.89 million views", sourced from frame OCR — but the OCR text actually misread "收藏/点赞" as "收款/点费". The numbers came from recognition noise.
 
 With only two states, the Verifier marks it "verified" and buries the caveat in a remarks section — the part you're most likely to skip. That number then enters your knowledge base looking confirmed.
 

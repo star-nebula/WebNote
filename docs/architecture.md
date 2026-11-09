@@ -112,7 +112,7 @@
 
 每次运行在 `runs/` 下建子目录 `YYYY-MM-DD-主题`，五个输出文件并列写入。原文不复制、不移动，仅记录来源路径。多次运行互不覆盖。
 
-完整范例见 [`examples/`](../examples/)。
+完整格式契约见 [`runs/_template/`](../runs/_template/)；两态核查时代的历史产物见 [`docs/history/`](history/2026-09-03-two-state-example/)。
 
 ---
 

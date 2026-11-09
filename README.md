@@ -56,7 +56,7 @@ python tools/doctor.py --wire    # Claude Code：生成 .claude/agents/ 并挂�
 
 **路径 C · 手动流水线**
 
-按五步顺序，每次让 AI 读对应的定义文件（见下方目录结构）。采编和确认你自己串。想先看产出长什么样：[`examples/`](examples/) 有一次完整运行的全部文件。
+按五步顺序，每次让 AI 读对应的定义文件（见下方目录结构）。采编和确认你自己串。格式见 [`runs/_template/`](runs/_template/)，那是现行契约。
 
 > 分层说明：`webnote-workflow` 是**总编排 skill**；图片、视频、小红书和网页无损拓存四条链路分别由 `skills/image-extract`、`skills/video-extract`、`skills/xhs-note`、`skills/web-archive` 承载，采编时按内容类型加载。五步细则见 [docs/architecture.md](docs/architecture.md)。
 
@@ -138,7 +138,7 @@ WebNote 是一套**以"可信"为核心的网页内容整理工作流**。它的
 | 已核实（转述源） | 出处在 OCR/ASR/Vision 产出中存在，但未回溯原始音画 | **需你自己回看确认** |
 | 可疑 / 原文无依据 | 找不到出处，或表述超出原文 | 不进 |
 
-**两态为什么不够**：看 [`examples/`](examples/) 里的真实案例。一条视频笔记写了「6289万热度」，出处是视频帧 OCR——但 OCR 原文里的"收款/点费"实为"收藏/点赞"的误识别，那些数字来自识别噪声。
+**两态为什么不够**：看 [`docs/history/`](docs/history/2026-09-03-two-state-example/) 里的历史案例。一条视频笔记写了「6289万热度」，出处是视频帧 OCR——但 OCR 原文里的"收款/点费"实为"收藏/点赞"的误识别，那些数字来自识别噪声。
 
 两态下核查官只能标「已核实」，然后把风险塞进备注。而备注是你最容易跳过的地方。这条笔记进知识库后，"6289万热度"看起来就是一个已核实的数字。
 
@@ -182,7 +182,8 @@ WebNote/
 │   ├── index.md                        #   索引：一行一条，只挑相关的读全文
 │   └── long-term/                      #   一条一文件，frontmatter 标置信度与来源
 │
-├── examples/                           # 一次完整运行的全部产出，建议先看
+├── runs/                               # 每次运行一个目录（不进 git，_template 除外）
+│   └── _template/                      # ★ 空骨架：现行格式契约，起新 run 直接复制
 │   └── 2026-09-03-端到端验收/
 │
 ├── tools/                              # 采编工具（渐进式依赖，都可以不装）
