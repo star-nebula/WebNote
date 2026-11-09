@@ -57,6 +57,8 @@
 | `runs/_template/` | 新 run 的空骨架（**进 git、只读**；表头是硬契约） | 起新 run 时整目录复制成 `runs/<日期-主题>/` |
 | `runs/<日期-主题>/` | 一次运行的五个产物（本地，gitignore 忽略） | 只在本次运行内读 |
 | `docs/` | 架构 `architecture.md`（现行）、`versions/` 已发表旧版、`decisions.md` 决策、`history/` 历史存档（勿照抄） | 理解整体设计 / 追溯缘由 |
+| `memory/MEMORY.md` | **本 bot 的长期记忆**（私有，不入 git）：判据、决策台账、教训、本机事实 | 会话开头先读这一份 |
+| `memory/log/` | 按日期的流水（私有，不入 git） | 只在追溯"当时为什么"时读 |
 | `persona/` | 角色头像原件（本地私有，不入 git） | 一般不用读 |
 
 `agents/`、`skills/webnote-workflow/references/steps/`、`tools/` 在运行中是权威，与 `README.md` 表述冲突时以它们为准；与**用户最新直接指令**冲突时以用户为准。
