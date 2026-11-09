@@ -6,7 +6,7 @@ agent_created: true
 
 # 小红书笔记 → 本地 Markdown（XHS 流水线）
 
-> 本 skill 是 WebNote-Workflow 项目的一部分，工具随项目内置在 `tools/`。
+> 本 skill 是 WebNote 项目的一部分，工具随项目内置在 `tools/`。
 
 ## 何时使用
 

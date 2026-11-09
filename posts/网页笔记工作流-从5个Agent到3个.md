@@ -175,7 +175,7 @@ python tools/extract-video-text.py https://www.bilibili.com/video/BV1xx
 
 这不是在偷懒少建几个 Agent，而是在认真思考：**哪些事只有 AI 能做，哪些事 AI 做反而更差。**
 
-项目已开源：[github.com/star-nebula/WebNote-Workflow](https://github.com/star-nebula/WebNote-Workflow)。仓库含完整文档、提示词和工具代码，欢迎 Star / Fork。
+项目已开源：[github.com/star-nebula/WebNote](https://github.com/star-nebula/WebNote)。仓库含完整文档、提示词和工具代码，欢迎 Star / Fork。
 
 ---
 

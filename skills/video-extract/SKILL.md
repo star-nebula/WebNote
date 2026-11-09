@@ -6,7 +6,7 @@ agent_created: true
 
 # 视频内容提取（Video → 语音 + 画面文字/语义）
 
-> 本 skill 是 WebNote-Workflow 项目的一部分，工具随项目内置在 `tools/`。
+> 本 skill 是 WebNote 项目的一部分，工具随项目内置在 `tools/`。
 
 ## 何时使用
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""WebNote-Workflow 环境自检
+"""WebNote 环境自检
 
 检查当前环境能用哪些功能、缺哪些依赖，并给出补齐提示。
 只用标准库，clone 下来即可运行，无需先装任何东西。
@@ -95,7 +95,7 @@ def probe():
 def render_text(results):
     line = "=" * 62
     print(line)
-    print("WebNote-Workflow 环境自检")
+    print("WebNote 环境自检")
     print(line)
 
     print("\n[核心流程] 始终可用，不依赖任何东西\n")
@@ -127,7 +127,7 @@ def render_text(results):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="WebNote-Workflow 环境自检")
+    parser = argparse.ArgumentParser(description="WebNote 环境自检")
     parser.add_argument("--json", action="store_true", help="输出 JSON")
     args = parser.parse_args()
 

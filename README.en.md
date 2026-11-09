@@ -1,4 +1,4 @@
-# WebNote-Workflow · Web-to-Note Workflow
+# WebNote · Web-to-Note Workflow
 
 > Turns "collect → classify → distill → verify → confirm" into **a scheduler (main session) + three independent agents**. Deterministic work stays with the scheduler; only what truly needs independent judgment goes to a subagent.
 
@@ -55,7 +55,7 @@ Walk the five steps yourself, pointing the AI at the relevant definition file ea
 
 ## Overview
 
-WebNote-Workflow is a **trust-first** pipeline. Its goal is not to produce notes faster, but to turn web content into knowledge you can actually rely on.
+WebNote is a **trust-first** pipeline. Its goal is not to produce notes faster, but to turn web content into knowledge you can actually rely on.
 
 ```
 Scheduler (your AI tool)

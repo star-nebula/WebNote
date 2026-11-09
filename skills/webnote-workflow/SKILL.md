@@ -4,7 +4,7 @@ description: 把网页/本地内容整理成"可信本地笔记"或按原结构�
 agent_created: true
 ---
 
-# WebNote-Workflow · 总编排
+# WebNote · 总编排
 
 把"内容采集 → 整理分类 → 提炼笔记 → 确认发布"组织为**调度器（主会话） + 三个独立执行角色**。
 

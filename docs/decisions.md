@@ -2,12 +2,12 @@
 
 > 从 SemanticMemory 迁入（2026-10-31）。原 claim 已归档，`--include-history` 仍可查。
 
-## WebNote-Workflow 架构决策：5 Agent 精简为主会话 + 3 subagent
+## WebNote 架构决策：5 Agent 精简为主会话 + 3 subagent
 
 不是每一步都需要独立的 AI 上下文。 确定性的事主会话自己干，只有真正需要独立判断的才创建 subagent：
 
 - 原 claim：`decision-2b28f2c3553f`（已归档）
-- 来源：`.backup/Memory-20261029/Decisions/WebNote-Workflow架构决策-5Agent精简为主会话+3subagent.md`
+- 来源：`.backup/Memory-20261029/Decisions/WebNote架构决策-5Agent精简为主会话+3subagent.md`
 
 ## 网页知识提取核心能力直写 Obsidian
 

@@ -152,7 +152,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/render-md.ps1 `
 
 ## WebNote 集成模式
 
-本 skill 是 WebNote-Workflow 的无损存档分支，与知识提炼分支共用“真实来源、不编造、可核验”的底线。
+本 skill 是 WebNote 的无损存档分支，与知识提炼分支共用“真实来源、不编造、可核验”的底线。
 
 - 只要求保存、镜像或归档时：输出结构化 Markdown 到 `E:\knowledge\Resources\`，到此停止。
 - 同时要求知识笔记时：先完成本 skill 的采集与抽样校验，再从已落库来源提炼到 `E:\knowledge\Knowledge\`。

@@ -1,4 +1,4 @@
-# WebNote-Workflow · 网页笔记工作流
+# WebNote · 网页笔记工作流
 
 > 把"内容采集 → 整理分类 → 提炼笔记 → 确认发布"拆成**调度器（主会话） + 三个独立 Agent** 分工协作。确定性的事调度器（主会话）自己干（画面采集为可选 AI 增强），只有真正需要独立判断的才交给 subagent。
 
@@ -58,7 +58,7 @@ python tools/check-env.py
 
 ### 项目简介
 
-WebNote-Workflow 是一套**以"可信"为核心的网页内容整理工作流**。它的目标不是帮你更快地生产，而是帮你**更可靠地把网页内容变成自己的知识**。
+WebNote 是一套**以"可信"为核心的网页内容整理工作流**。它的目标不是帮你更快地生产，而是帮你**更可靠地把网页内容变成自己的知识**。
 
 > 本项目在 [Axton Liu《Agent OS 的第一课：会分工，才会用 Agent》](https://www.axtonliu.ai/newsletters/ai-2/posts/agent-os-workstation-division) 一文的理念启发下自行实现与改进，落地成一套可直接复用、按文件流水线运行的工作流。本仓库仅借鉴其"分工隔离 / 独立核查 / 确认闸门"三层设计思路，所有文档与提示词均为独立撰写。
 
@@ -141,7 +141,7 @@ WebNote-Workflow 是一套**以"可信"为核心的网页内容整理工作流**
 ### 目录结构
 
 ```
-WebNote-Workflow/
+WebNote/
 ├── README.md                           # 中文文档 + 快速开始
 ├── README.en.md                        # English documentation
 ├── Webpage note workflow.md            # 流程理念与索引（细节指向各定义文件）
@@ -302,7 +302,7 @@ AI 出提案，你按确认键。判断标准：**这个动作如果错了，撤
   `E:\data\models\HuggingFace\hub\models--Systran--faster-whisper-large-v3` 的 snapshot 目录再传给 `WhisperModel`。
   只写模型名仍会联网校验；`large-v3-turbo` 的上游仓库已私有化，按名字加载会 401。
 - **git 推送走 Windows 侧**：WSL 里 `~/.ssh` 为空，`git push` 会卡在 publickey 等待。
-  在 Windows 终端（或 `cmd.exe /c "cd /d E:\Projects\personal\WebNote-Workflow && git push"`）执行，密钥在 `C:\Users\stars\.ssh`。
+  在 Windows 终端（或 `cmd.exe /c "cd /d E:\Projects\personal\WebNote && git push"`）执行，密钥在 `C:\Users\stars\.ssh`。
 
 ### 参考
 
