@@ -1,0 +1,75 @@
+# WebNote 能力清单（机器可读真源）
+#
+# 谁读它：
+#   - tools/doctor.py  → 生成各工具的注册面（--wire）、校验生成物是否最新（--check）
+#   - AGENTS.md        → 其中「本项目提供什么」机器块由本文件生成
+#
+# 改这里，然后跑 `python tools/doctor.py --wire`；不要手改生成物。
+schema: 1
+
+name: WebNote
+entry: AGENTS.md
+public_entry: AGENTS.public.md
+
+# 角色：真源在 agents/<name>.md，这里只放各工具需要的注册信息
+roles:
+  - name: classifier
+    title: 整理分类
+    path: agents/classifier.md
+    fresh_context: false
+    write_scope: runs/*/01-整理清单.md
+    tools: [Read, Grep, Glob, Edit, Write]
+    disallowed_tools: [Bash, WebFetch, WebSearch]
+
+  - name: distiller
+    title: 笔记提炼
+    path: agents/distiller.md
+    fresh_context: false
+    write_scope: runs/*/02-笔记.md
+    tools: [Read, Grep, Glob, Edit, Write]
+    disallowed_tools: [Bash, WebFetch, WebSearch]
+
+  - name: verifier
+    title: 独立核查
+    path: agents/verifier.md
+    fresh_context: true          # 必须与撰写者零共享上下文
+    write_scope: runs/*/03-核查表.md
+    tools: [Read, Grep, Glob, Edit, Write]
+    disallowed_tools: [Bash, WebFetch, WebSearch]
+
+# 技能：真源在 skills/<name>/SKILL.md
+skills:
+  - name: webnote-workflow
+    path: skills/webnote-workflow
+  - name: web-archive
+    path: skills/web-archive
+  - name: image-extract
+    path: skills/image-extract
+  - name: video-extract
+    path: skills/video-extract
+  - name: xhs-note
+    path: skills/xhs-note
+
+# 流程：只写步骤名，细则在 skills/webnote-workflow/references/steps/
+flows:
+  - id: lean
+    title: 精简流程
+    steps: [取原文, 分类, 提炼, 核查, 确认]
+  - id: full
+    title: 完整流程
+    steps: [采编清单, 整理分类, 笔记提炼, 独立核查, 人工确认]
+
+# 命令
+commands:
+  doctor: python tools/doctor.py
+  wire: python tools/doctor.py --wire
+  check: python tools/doctor.py --check
+  check_env: python tools/check-env.py
+  test: python -m pytest tests -q
+
+# 生成面：哪些工具需要注册文件（doctor.py 按此生成）
+surfaces:
+  claude:
+    kind: agent-files
+    dir: .claude/agents          # 每个角色一个 <name>.md
+    hooks: true                  # 附带 PreToolUse 写入守卫

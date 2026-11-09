@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 import subprocess
 import sys
@@ -104,3 +105,51 @@ def test_no_legacy_paths():
             if pat in text:
                 hits.append(f"{rel} 仍引用旧路径 {pat}")
     assert not hits, "旧路径残留：\n" + "\n".join(hits)
+
+
+# ---------- 角色注册面：bot.yaml 为真源，.claude/ 为生成物 ----------
+
+def test_bot_manifest_matches_roles():
+    """bot.yaml 里每个角色的定义文件必须存在，且 description 可用。"""
+    import yaml
+
+    bot = yaml.safe_load((ROOT / "bot.yaml").read_text(encoding="utf-8"))
+    assert bot["roles"], "bot.yaml 没有角色"
+    for role in bot["roles"]:
+        p = ROOT / role["path"]
+        assert p.exists(), f"角色定义缺失：{role['path']}"
+        head = read(p).split("---")
+        assert len(head) >= 3 and "description:" in head[1], f"{role['path']} frontmatter 缺 description"
+        assert role.get("write_scope"), f"{role['name']} 没有 write_scope"
+
+
+def test_generated_surfaces_are_fresh():
+    """生成物与真源不一致就失败（禁止手改 .claude/agents）。"""
+    out = subprocess.run(
+        [sys.executable, "tools/doctor.py", "--check"],
+        cwd=ROOT, capture_output=True, text=True,
+    )
+    assert out.returncode == 0, "生成物过期，跑 python tools/doctor.py --wire\n" + out.stdout
+
+
+def test_write_guard_blocks_out_of_scope():
+    """守卫：角色越界写入 exit 2，边界内 exit 0，主 agent（无 agent_type）放行。"""
+    guard = ROOT / "tools/hooks/guard_write.py"
+
+    def run(payload):
+        return subprocess.run(
+            [sys.executable, str(guard)], cwd=ROOT, capture_output=True, text=True,
+            input=json.dumps(payload),
+        )
+
+    in_scope = run({"agent_type": "verifier", "tool_name": "Write",
+                    "tool_input": {"file_path": "runs/x/03-核查表.md"}})
+    assert in_scope.returncode == 0, in_scope.stderr
+
+    out_scope = run({"agent_type": "verifier", "tool_name": "Write",
+                     "tool_input": {"file_path": "runs/x/02-笔记.md"}})
+    assert out_scope.returncode == 2, "越界写入必须被拦截"
+    assert "拒绝写入" in out_scope.stderr
+
+    main_agent = run({"tool_name": "Write", "tool_input": {"file_path": "README.md"}})
+    assert main_agent.returncode == 0, "主 agent 不该被角色边界限制"

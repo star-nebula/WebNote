@@ -23,7 +23,8 @@ The value of this project is the **workflow design and agent definitions**, not 
 Not sure what your machine can do? Run the self-check (standard library only):
 
 ```bash
-python tools/check-env.py
+python tools/doctor.py      # what this tool can use, what's missing
+python tools/check-env.py   # which media branches work on this machine
 ```
 
 It prints what works, what's missing, and how to install it. **Missing capabilities only affect their media type** — no ffmpeg means no video, but the text pipeline works fine.
@@ -35,7 +36,7 @@ It prints what works, what's missing, and how to install it. **Missing capabilit
 Copy the project's `skills/` directory into your AI tool's project-level skills dir:
 
 - WorkBuddy / Codex: `<project>/skills/` → `.workbuddy/skills/`、`.codex/skills/`
-- Claude Code: `<project>/skills/` → `.claude/skills/`
+- Claude Code: `<project>/skills/` → `.claude/skills/`, then `python tools/doctor.py --wire` for roles + write guard
 - Tool doesn't support project skills → use Path B
 
 **Path B · One prompt** (no install, works with any AI)
@@ -86,7 +87,9 @@ skills/webnote-workflow/references/steps/
 
 `agents/` is a **workflow asset** at the project root; the step cards live in `skills/webnote-workflow/references/steps/`. `skills/webnote-workflow/SKILL.md` is just a router that points to them via project-root-relative paths.
 
-**Registration shims (`.claude/agents/`)**: if you want role independence enforced by the *tool mechanism* rather than by prompt pleading, copy the matching shim from `.claude/agents/` into your tool's agent registry (e.g. WorkBuddy's `~/.workbuddy/agents/`, Claude Code's `.claude/agents/`). Each shim carries only a tool allow-list — the Verifier gets read-only tools plus write permission limited to its own `03-核查表.md`, so it *cannot* modify the notes. The role definition itself is never copied; it always points back to the single source of truth in `agents/`.
+**Registration surfaces (`bot.yaml` → `.claude/`)**: role identity lives in `agents/*.md`; what each tool needs to *register* them (tool allow-list, write scope, whether a fresh context is required) lives in `bot.yaml`. `python tools/doctor.py --wire` generates `.claude/agents/*.md` plus a `PreToolUse` hook in `.claude/settings.json`, so the Verifier's write boundary is **enforced** — an out-of-scope write is rejected by the hook instead of merely discouraged by the prompt. `--check` fails CI if a generated file drifts from the sources.
+
+Nothing there is hand-written, and nothing is copied to a global directory: the role definition always points back to `agents/<name>.md`.
 
 ### Execution modes
 

@@ -2,6 +2,7 @@
 name: verifier
 role: 笔记核查员
 type: agent
+description: WebNote 第 4 步 · 笔记核查员：逐条比对笔记与原文，做三态判定（已核实·直接引用 / 已核实·转述源 / 可疑），必须全新上下文运行
 context: fresh
 must_not_share_context_with:
   - distiller

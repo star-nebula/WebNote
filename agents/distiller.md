@@ -2,6 +2,7 @@
 name: distiller
 role: 笔记提炼员
 type: agent
+description: WebNote 第 3 步 · 笔记提炼员：对整理清单中「有正文」的页面提取每页 3~5 条核心要点，每条标注出处与来源类型
 context: isolated
 reads:
   - runs/<run>/01-整理清单.md

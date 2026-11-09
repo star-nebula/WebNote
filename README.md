@@ -39,6 +39,15 @@ python tools/check-env.py
 - Claude Code：`<项目>/skills/` → `.claude/skills/`
 - 工具不支持项目级 skill → 走路径 B
 
+### 一次装好角色与写入边界
+
+```bash
+python tools/doctor.py          # 看当前工具能用什么、缺什么
+python tools/doctor.py --wire    # Claude Code：生成 .claude/agents/ 并挂上写入守卫
+```
+
+不做这一步也能用：`AGENTS.public.md` 里已经写了每个角色该读什么、写什么、什么时候必须换上下文，任何能读文件的工具直接按路径执行即可。`--wire` 只是把「靠遵守」升级成「靠拦截」——核查官写越界文件会被当场拒绝。
+
 **路径 B · 一条提示词（不装配也能用，任何 AI 都行）**
 
 - 有子代理能力的工具（Claude Code / CodeBuddy / Cursor）→ [`prompts/入口提示词-全自动.md`](prompts/入口提示词-全自动.md)
@@ -145,15 +154,15 @@ WebNote/
 ├── README.md                           # 中文文档 + 快速开始
 ├── README.en.md                        # English documentation
 ├── AGENTS.public.md                    # 给 AI 的公开入口（AGENTS.md 的脱敏版，生成物）
+├── bot.yaml                            # ★ 能力清单（机器可读）：角色 / 技能 / 流程 / 各工具注册面
 │
 ├── agents/                             # ★ 三个角色定义（唯一事实来源，平台无关）
 │   ├── classifier.md                   #   归类师：四选一分类
 │   ├── distiller.md                    #   笔记匠：提炼要点，标注出处与来源类型
 │   └── verifier.md                     #   核查官：三态核查（必须全新上下文）
-├── .claude/agents/                     # 注册薄壳（按需复制到你的工具注册位）
-│   ├── classifier.md                   #   只含工具白名单 + 指向 agents/
-│   ├── distiller.md
-│   └── verifier.md
+├── .claude/                            # Claude Code 注册面（全部是生成物，勿手改）
+│   ├── agents/{classifier,distiller,verifier}.md   # 由 bot.yaml + agents/*.md 生成
+│   └── settings.json                   #   PreToolUse 写入守卫挂载（doctor.py 维护）
 │
 ├── skills/                            # 项目内置的 AI skill（SKILL.md 只做路由，细则在 references/）
 │   ├── webnote-workflow/               # ★ 总编排 skill（AI 入口：资源索引 + 派发顺序）
@@ -177,6 +186,8 @@ WebNote/
 │
 ├── tools/                              # 采编工具（渐进式依赖，都可以不装）
 │   ├── check-env.py                    # 环境自检，零依赖
+│   ├── doctor.py                       # ★ 能力自检 / 为当前工具生成注册面（--wire / --check）
+│   ├── hooks/guard_write.py            #   PreToolUse 写入守卫（按角色 write_scope 拦越界写入）
 │   ├── extract-document.py             # PDF/DOCX 文本提取
 │   ├── extract-webpage.py              # BrowserSkill 图文页面提取
 │   ├── extract-video-text.py           # BrowserSkill 视频页面提取
@@ -211,7 +222,9 @@ WebNote/
 └── LICENSE                             # MIT
 ```
 
-**`agents/` 里的三份文件是角色定义的唯一事实来源。** 派发子代理时把文件交给它，不要凭记忆复述——复述最容易漏掉的是铁律，而铁律恰恰是不能漏的部分。每个文件头部有 frontmatter 契约（`context` / `reads` / `writes` / `forbidden`）。
+**`agents/` 里的三份文件是角色定义的唯一事实来源。** 派发子代理时把文件交给它，不要凭记忆复述——复述最容易漏掉的是铁律，而铁律恰恰是不能漏的部分。每个文件头部有 frontmatter 契约（`description` / `context` / `reads` / `writes` / `forbidden`）。
+
+`.claude/` 下的东西全部由 `bot.yaml` + `agents/*.md` 生成：`python tools/doctor.py --wire` 刷新，`--check` 校验（CI 会跑，手改会被打回）。这套「真源 + 生成物」的结构让同一份角色定义能被不同工具消费：读得懂路径的工具直接用，支持注册的工具拿到工具白名单和写入拦截。
 
 **`agents/` 是流程资产；`steps/` 作为 `webnote-workflow` 的 `references/steps/` 存放**，SKILL.md 只做路由，通过相对项目根的路径指向它们。
 

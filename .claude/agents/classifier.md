@@ -1,38 +1,11 @@
 ---
 name: classifier
-description: WebNote 工作流第 2 步——内容分类员。对采编清单中"有正文"的内容做四选一语义分类（学习/借鉴/内容补充/可归档）。执行前必读项目根 agents/classifier.md 的完整角色定义与契约。
-tools:
-  - Read
-  - Grep
-  - Glob
-  - Edit
-  - Write
-permissions:
-  allow:
-    - "Write(runs/<run>/01-整理清单.md)"
-    - "Edit(runs/<run>/01-整理清单.md)"
-  deny:
-    - "Write(*)"
-    - "Edit(*)"
-    - "Bash(*)"
-    - "WebFetch(*)"
-    - "WebSearch(*)"
+description: WebNote 第 2 步 · 内容分类员：对采编清单中「有正文」的条目做四选一语义分类（学习 / 借鉴 / 内容补充 / 可归档）（执行前必读 agents/classifier.md）
+tools: Read, Grep, Glob, Edit, Write
+disallowedTools: Bash, WebFetch, WebSearch
 ---
 
-# classifier（内容分类员）· 注册薄壳
+本文件由 `python tools/doctor.py --wire` 生成，勿手改。
 
-本文件是**注册薄壳**，只承载工具白名单与文件写入边界；角色定义、契约字段与铁律见**项目根 `agents/classifier.md`**（唯一事实来源）。
-
-**执行前必读**：`<项目根>/agents/classifier.md`
-
-## 工具边界
-
-- **只读**：Read / Grep / Glob
-- **只写自己的产出**：仅允许写入 `runs/<run>/01-整理清单.md`
-- **禁止**：Bash / WebFetch / WebSearch，以及任何对其它文件的写操作
-
-## 关键约束（详见权威定义）
-
-- 只归类，不提炼正文
-- 只依据采编清单中的来源路径，不自己去抓网页
-- 四选一：学习 / 借鉴 / 内容补充 / 可归档
+角色定义、契约字段（reads / writes / forbidden）与铁律见 `agents/classifier.md`，执行前必读。
+写入边界由项目级 hook 强制（`.claude/settings.json` → `tools/hooks/guard_write.py`）：只允许写 `runs/*/01-整理清单.md`。

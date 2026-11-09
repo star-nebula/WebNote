@@ -8,6 +8,50 @@
 
 按下面顺序读，不要凭记忆复现任何定义。
 
+## 本项目提供什么（任何工具通用）
+
+下面这段由 `bot.yaml` 生成，是本仓全部能力的清单：
+
+<!-- bot:start 由 bot.yaml 生成，勿手改；改完跑 python tools/doctor.py --wire -->
+
+角色（需要时读定义文件，按其 reads / writes / forbidden 执行）：
+
+| 角色 | 定义 | 可写 | 独立上下文 |
+|---|---|---|---|
+| `classifier` | `agents/classifier.md` | `runs/*/01-整理清单.md` | 否 |
+| `distiller` | `agents/distiller.md` | `runs/*/02-笔记.md` | 否 |
+| `verifier` | `agents/verifier.md` | `runs/*/03-核查表.md` | 必须 |
+
+技能（开工先读对应 SKILL.md，只做路由）：
+
+- `webnote-workflow` → `skills/webnote-workflow/SKILL.md`
+- `web-archive` → `skills/web-archive/SKILL.md`
+- `image-extract` → `skills/image-extract/SKILL.md`
+- `video-extract` → `skills/video-extract/SKILL.md`
+- `xhs-note` → `skills/xhs-note/SKILL.md`
+
+流程：
+- `lean`（精简流程）：取原文 → 分类 → 提炼 → 核查 → 确认
+- `full`（完整流程）：采编清单 → 整理分类 → 笔记提炼 → 独立核查 → 人工确认
+
+命令：
+- `python tools/doctor.py`  — doctor
+- `python tools/doctor.py --wire`  — wire
+- `python tools/doctor.py --check`  — check
+- `python tools/check-env.py`  — check_env
+- `python -m pytest tests -q`  — test
+<!-- bot:end -->
+
+**怎么用（不依赖任何工具的注册表）：**
+
+1. 需要某个角色时，读上表里它的定义文件，按 `reads` / `writes` / `forbidden` 执行。
+   你的工具若不支持子 agent，就自己扮演该角色，**一次只扮一个**。
+2. 标「必须独立上下文」的角色，必须在**不携带上文**的情况下执行（新会话，或明确声明
+   「以下判断不参考我此前的结论」）。做不到就按 `agents/verifier.md` 的降级声明显式标注。
+3. 表里的「可写」是硬边界：越界的一律不写，把内容作为回复交回主 agent。
+4. 想拿到工具级硬约束（工具白名单、写入拦截、真隔离），跑 `python tools/doctor.py --wire`；
+   只想知道本工具缺什么，跑 `python tools/doctor.py`。
+
 ## 目录职责
 
 | 路径 | 是什么 | 什么时候读 |
@@ -15,8 +59,10 @@
 | `skills/` | 五个技能：`webnote-workflow`（总编排）、`web-archive`、`image-extract`、`video-extract`、`xhs-note` | 开工先读对应 `SKILL.md`（只做路由），细则在 `references/` |
 | `skills/webnote-workflow/references/steps/` | 五步流程细则（collect / collect-image / collect-video-audio / collect-web-archive / confirm） | 手动流水线（路径 C）逐条读 |
 | `agents/` | 三个子角色：`classifier`（整理分类）、`distiller`（提炼笔记）、`verifier`（独立核查） | 派发 subagent 前读，把**文件路径**交给它 |
+| `bot.yaml` | 能力清单真源：角色/skill/流程/命令/各工具注册面 | 改角色注册信息、增删技能时 |
+| `.claude/agents/` | Claude Code 的注册面，**生成物**（`bot.yaml` + `agents/*.md` → 勿手改） | 只由 `doctor.py --wire` 写入 |
 | `prompts/` | 两条入口提示词：全自动 / 单对话框 | 工具不支持项目级技能时（路径 B） |
-| `tools/` | 采编加速器（Python 标准库为主，可选依赖按需装）+ `sync-agents-public.py` | 采集、转写、拓存时 |
+| `tools/` | 采编加速器（Python 标准库为主，可选依赖按需装）+ `doctor.py`（自检/接线）+ `hooks/guard_write.py`（写入守卫）+ `sync-agents-public.py` | 采集、转写、拓存时 |
 | `tools/_migrations/` | 一次性维护脚本（已跑过，不进运行时） | 只有做结构迁移、查断链、脱敏示例时才用 |
 | `tests/` | 仓库不变量（pytest）+ web-archive 真机回归 + 离线夹具 | 改完结构或流程后跑 |
 | `examples/` | 一次完整运行的全部产物 | 想知道产出长什么样 |
@@ -69,5 +115,11 @@
 
 ## 自检
 
+- `python tools/doctor.py` —— 本工具能用什么、缺什么（角色 / 技能 / 生成物 / 写入守卫）
+- `python tools/doctor.py --wire` —— 生成注册面与挂上守卫（幂等；改完 `bot.yaml` 或 `agents/*.md` 后跑）
+- `python tools/doctor.py --check` —— 生成物是否与真源一致（手改 `.claude/` 会被它打回）
 - `python tools/check-env.py` —— 当前机器能跑哪些媒体分支
 - `python tools/sync-agents-public.py --check` —— 公开版是否与私有版一致（漂移返回非 0）
+- `python -m pytest tests -q` —— 仓库不变量（角色齐全、无私有路径泄漏、守卫拦截生效）
+
+**改角色时只改两处**：`agents/<name>.md`（定义与 `description`）与 `bot.yaml`（工具白名单 / `write_scope` / 是否需要独立上下文）；然后 `--wire`。生成物永远不要手改。

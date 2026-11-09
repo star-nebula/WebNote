@@ -2,6 +2,7 @@
 name: classifier
 role: 内容分类员
 type: agent
+description: WebNote 第 2 步 · 内容分类员：对采编清单中「有正文」的条目做四选一语义分类（学习 / 借鉴 / 内容补充 / 可归档）
 context: isolated
 reads:
   - runs/<run>/00-采编清单.md
