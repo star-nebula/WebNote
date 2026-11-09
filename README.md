@@ -2,7 +2,7 @@
 
 > 把"内容采集 → 整理分类 → 提炼笔记 → 确认发布"拆成**调度器（主会话） + 三个独立 Agent** 分工协作。确定性的事调度器（主会话）自己干（画面采集为可选 AI 增强），只有真正需要独立判断的才交给 subagent。
 
-[English](README.en.md) · [中文文档](#目录结构)
+[English](README.en.md) · [中文文档](#目录结构) · [给 AI 的入口 AGENTS.public.md](AGENTS.public.md)
 
 ---
 
