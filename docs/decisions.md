@@ -41,3 +41,16 @@
 
 - 原 claim：`rule-webnote-direct-write`（已归档）
 - 来源：`.backup/Memory-20261029/Preferences/网页知识提取机器人-核心能力直写Obsidian.md`
+
+## 2026-11-09 · 新 run 用 `runs/_template/` 空骨架，不动 `examples/`
+
+**背景**：00–04 五个产物的表头一直靠 SKILL.md 的散文描述 + `examples/` 对照，实际开跑时是 AI 现编表头，列名与分区逐次漂移；`examples/` 又是三态改造前的冻结快照（故意不改），不能当格式基准。
+
+**决定**：新增 `runs/_template/`（五份空骨架，进 git、只读）。`examples/` 保持原样继续冻结。两者分工：模板是空的格式契约，范例是跑完的真实教材。
+
+**理由**：骨架文件比格式卡硬——AI 会直接复制，不需要先读懂规则；`examples/` 挪进 `runs/` 则会撞上 `runs/*` 的忽略规则，且本机已有同名运行目录。
+
+**代价与配套**：
+- `.gitignore` 需要 `!runs/_template/` 与 `!runs/_template/**` 两个例外（否则模板自己被忽略）。
+- `bot.yaml` 里 verifier 的 `write_scope: runs/*/03-核查表.md` 会误匹配 `runs/_template/`，因此 `tools/hooks/guard_write.py` 显式拒绝任何 `runs/_template/` 写入。
+- 三条测试兜底：模板文件齐全且表头与步骤卡一致、模板不被 gitignore、守卫拒绝写模板。

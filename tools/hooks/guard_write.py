@@ -102,6 +102,16 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     rel = target(raw.strip(), root)
+
+    # runs/_template/ 是进 git 的空骨架：任何角色都不得改写（`runs/*/` 的 glob 会误匹配它）
+    if rel.replace("\\", "/").startswith("runs/_template/"):
+        print(
+            f"[WebNote] 拒绝写入：{rel}\n"
+            "`runs/_template/` 是新 run 的空骨架，只读。起新 run 请复制整个目录到 `runs/<日期-主题>/` 再填。",
+            file=sys.stderr,
+        )
+        return 2
+
     if any(matches(rel, s) for s in scopes):
         return 0
 

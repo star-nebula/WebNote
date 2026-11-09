@@ -174,3 +174,60 @@ def test_memory_not_written_by_roles():
     for role in data.get("roles", []):
         scope = str(role.get("write_scope", ""))
         assert "memory/" not in scope, f"角色 {role.get('name')} 不该有写 memory/ 的权限"
+
+
+# runs/_template/ 的空骨架 ↔ 它的规范出处。表头改了任何一边都必须同步另一边。
+RUN_TEMPLATE = {
+    "00-采编清单.md": (
+        "skills/webnote-workflow/references/steps/collect.md",
+        ["| ID | 标题 | 域名 | 媒体格式 | 正文字符数 | 有正文 | 提取方式 | 提取结果 | 原文来源 |"],
+    ),
+    "01-整理清单.md": (
+        "agents/classifier.md",
+        ["| ID | 标题 | 域名 | 媒体格式 | 正文字符数 | 有正文 | 分类 | 原文来源 |"],
+    ),
+    "02-笔记.md": (
+        "agents/distiller.md",
+        ["**为什么值得保留**：", "**修订建议**：", "（出处：第 3 段 · 原文）"],
+    ),
+    "03-核查表.md": (
+        "agents/verifier.md",
+        ["| 条目 | 状态 | 来源类型 | 正文依据 |", "## 需用户回看的条目", "| 条目 | 状态 | 为什么需要回看 |"],
+    ),
+    "04-待确认提案.md": (
+        "skills/webnote-workflow/references/steps/confirm.md",
+        ["| 条目 | 建议动作 | 依据 |", "| 条目 | 问题 | 建议动作 |", "## 待你确认的落地动作"],
+    ),
+}
+
+
+@pytest.mark.parametrize("name", sorted(RUN_TEMPLATE))
+def test_run_template_matches_step_cards(name):
+    """新 run 的空骨架必须与步骤卡定义一致，防止每份产出的表头自己漂移。"""
+    source, needles = RUN_TEMPLATE[name]
+    src = read(ROOT / source)
+    tpl_path = ROOT / "runs/_template" / name
+    assert tpl_path.is_file(), f"runs/_template/{name} 缺失"
+    tpl = read(tpl_path)
+    for needle in needles:
+        assert needle in src, f"{source} 里找不到 {needle!r}（规范改了，模板与测试要一起改）"
+        assert needle in tpl, f"runs/_template/{name} 里找不到 {needle!r}"
+
+
+def test_run_template_is_tracked_not_ignored():
+    """骨架必须进 git：runs/* 的忽略规则不得把它吞掉。"""
+    target = "runs/_template/00-采编清单.md"
+    res = subprocess.run(["git", "check-ignore", target], cwd=ROOT, capture_output=True, text=True)
+    assert res.returncode == 1, f"{target} 被 .gitignore 忽略了，需要 !runs/_template/** 例外"
+
+
+def test_write_guard_protects_template():
+    """守卫：任何角色都不能改写 runs/_template/（`runs/*/` 的 glob 会误匹配它）。"""
+    guard = ROOT / "tools/hooks/guard_write.py"
+    res = subprocess.run(
+        [sys.executable, str(guard)], cwd=ROOT, capture_output=True, text=True,
+        input=json.dumps({"agent_type": "verifier", "tool_name": "Write",
+                          "tool_input": {"file_path": "runs/_template/03-核查表.md"}}),
+    )
+    assert res.returncode == 2, "骨架目录必须只读"
+    assert "runs/_template/" in res.stderr

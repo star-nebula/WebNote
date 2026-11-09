@@ -66,7 +66,9 @@
 | `tools/` | 采编加速器（Python 标准库为主，可选依赖按需装）+ `doctor.py`（自检/接线）+ `hooks/guard_write.py`（写入守卫）+ `sync-agents-public.py` | 采集、转写、拓存时 |
 | `tools/_migrations/` | 一次性维护脚本（已跑过，不进运行时） | 只有做结构迁移、查断链、脱敏示例时才用 |
 | `tests/` | 仓库不变量（pytest）+ web-archive 真机回归 + 离线夹具 | 改完结构或流程后跑 |
-| `examples/` | 一次完整运行的全部产物 | 想知道产出长什么样 |
+| `examples/` | 一次完整运行（三态改造前）的全部产物，**冻结不更新** | 想知道产出长什么样 |
+| `runs/<日期-主题>/` | 一次运行的五个产物（本地，`gitignore` 忽略） | 只在本次运行内读 |
+| `runs/_template/` | 新 run 的空骨架（**进 git、只读**；表头是硬契约，测试会比对） | 起新 run 时整个目录复制成 `runs/<日期-主题>/`，再填 |
 | `docs/` | 架构 `architecture.md`（v3 现行）、历史版本 `versions/`、决策 `decisions.md`、外部手册 `vendor/` | 理解整体设计 / 追溯版本 |
 | `config/` | 运行时默认参数（公开，不含机器路径） | 改阈值、媒体后缀、核查规则时 |
 | `persona/` | 角色头像等原件（本地私有，不入 git） | 一般不用读 |

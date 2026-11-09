@@ -3,6 +3,10 @@
 runs/*
 !runs/.gitkeep
 
+# 新 run 的空骨架要进 git（随代码演化）；其余运行产物一律不入仓
+!runs/_template/
+!runs/_template/**
+
 # ===== 项目私有记忆 / Agent 数据 =====
 .workbuddy/
 .memory/
