@@ -25,8 +25,9 @@
 
 ## 落库规则
 
-- 原样存档：`E:\knowledge\Resources\<主题>\<来源>\`
-- 提炼知识：`E:\knowledge\Knowledge\<领域>\`
+- 原样存档：`<知识库根>/Resources/<主题>/<来源>/`
+- 提炼知识：`<知识库根>/Knowledge/<领域>/`
+- `<知识库根>` 由用户环境决定（本机配置 `KNOWLEDGE_ROOT`）；未配置时先问用户，不要猜路径。
 - 页面标题、规范 URL、提取时间、采集方式必须写入文档头或 frontmatter。
 - 只复用用户本机已有登录态；权限不足即停止，不绕过付费墙、账号权限或验证码。
 
@@ -36,4 +37,4 @@
 2. 标题层级、列表、引用、表格行列、代码块语言和阅读顺序保留；
 3. 报告窗口数、块数、表格数、图片数、代码块数与保存路径；
 4. 任何漏采、降级或未验证站点必须显式说明。
-5. 修改脚本后运行 `powershell -File _agent_scripts/test-web-archive.ps1`；测试覆盖钉钉、飞书、普通 HTML、登录墙、合并单元格、未知代码语言和 Mermaid。
+5. 修改脚本后运行 `powershell -File tests/test-web-archive.ps1`；测试覆盖钉钉、飞书、普通 HTML、登录墙、合并单元格、未知代码语言和 Mermaid。

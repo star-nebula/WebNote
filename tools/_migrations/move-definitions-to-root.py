@@ -23,7 +23,7 @@ if hasattr(sys.stdout, "reconfigure"):
     except Exception:
         pass
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parent.parent.parent
 SKILL_DIR = ROOT / "skills" / "webnote-workflow"
 
 MOVES = ["agents", "steps"]

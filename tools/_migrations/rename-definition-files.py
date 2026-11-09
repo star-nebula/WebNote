@@ -22,7 +22,7 @@ if hasattr(sys.stdout, "reconfigure"):
     except Exception:
         pass
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parent.parent.parent
 SKILL_DIR = ROOT / "skills" / "webnote-workflow"
 
 # 文件名重命名：(所在目录, 旧名, 新名)

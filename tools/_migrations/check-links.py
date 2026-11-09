@@ -44,14 +44,14 @@ def main():
     args = parser.parse_args()
 
     # 本脚本位于 <项目根>/_agent_scripts/，故上溯两级
-    root = Path(args.root) if args.root else Path(__file__).resolve().parent.parent
+    root = Path(args.root) if args.root else Path(__file__).resolve().parent.parent.parent
     root = root.resolve()
 
     # 跳过私有记忆目录（不属于开源发布内容，且内部文件名引用随时会过时）
-    SKIP_DIRS = {".git", "__pycache__", ".workbuddy", ".memory", "runs"}
+    SKIP_DIRS = {".git", "__pycache__", ".workbuddy", ".memory", "runs", ".claude", ".github", "node_modules", "site-packages"}
     md_files = sorted(
         p for p in root.rglob("*.md")
-        if not (SKIP_DIRS & set(p.parts))
+        if not (SKIP_DIRS & set(p.parts)) and not any(part.startswith(".venv") for part in p.parts)
     )
 
     broken, checked = [], 0

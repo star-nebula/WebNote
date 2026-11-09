@@ -50,7 +50,7 @@ python tools/check-env.py
 
 按五步顺序，每次让 AI 读对应的定义文件（见下方目录结构）。采编和确认你自己串。想先看产出长什么样：[`examples/`](examples/) 有一次完整运行的全部文件。
 
-> 分层说明：`webnote-workflow` 是**总编排 skill**；图片、视频、小红书和网页无损拓存四条链路分别由 `skills/image-extract`、`skills/video-extract`、`skills/xhs-note`、`skills/web-archive` 承载，采编时按内容类型加载。五步细则见 [Webpage note workflow.md](Webpage%20note%20workflow.md)。
+> 分层说明：`webnote-workflow` 是**总编排 skill**；图片、视频、小红书和网页无损拓存四条链路分别由 `skills/image-extract`、`skills/video-extract`、`skills/xhs-note`、`skills/web-archive` 承载，采编时按内容类型加载。五步细则见 [docs/architecture.md](docs/architecture.md)。
 
 ---
 
@@ -144,26 +144,30 @@ WebNote 是一套**以"可信"为核心的网页内容整理工作流**。它的
 WebNote/
 ├── README.md                           # 中文文档 + 快速开始
 ├── README.en.md                        # English documentation
-├── Webpage note workflow.md            # 流程理念与索引（细节指向各定义文件）
+├── AGENTS.public.md                    # 给 AI 的公开入口（AGENTS.md 的脱敏版，生成物）
 │
 ├── agents/                             # ★ 三个角色定义（唯一事实来源，平台无关）
 │   ├── classifier.md                   #   归类师：四选一分类
 │   ├── distiller.md                    #   笔记匠：提炼要点，标注出处与来源类型
 │   └── verifier.md                     #   核查官：三态核查（必须全新上下文）
-├── steps/                              # 调度器自执行的步骤卡（操作卡，无契约）
-│   ├── collect.md                      #   采编主卡：媒体分类规则 + 路由
-│   ├── collect-image.md                #   采编 · 图片分支
-│   ├── collect-video-audio.md          #   采编 · 视频/音频三级回退
-│   └── confirm.md                      #   确认：汇总规则 + 确认边界
 ├── .claude/agents/                     # 注册薄壳（按需复制到你的工具注册位）
 │   ├── classifier.md                   #   只含工具白名单 + 指向 agents/
 │   ├── distiller.md
 │   └── verifier.md
 │
-├── skills/                             # 项目内置的 AI skill
+├── skills/                            # 项目内置的 AI skill（SKILL.md 只做路由，细则在 references/）
 │   ├── webnote-workflow/               # ★ 总编排 skill（AI 入口：资源索引 + 派发顺序）
-│   │   └── SKILL.md
-│   └── web-archive/                    # 防复制页 / 云文档 / 懒加载长文无损拓存
+│   │   ├── SKILL.md
+│   │   └── references/steps/           #   五步流程细则（操作卡，无契约）
+│   │       ├── collect.md              #     采编主卡：媒体分类规则 + 路由
+│   │       ├── collect-image.md        #     采编 · 图片分支
+│   │       ├── collect-video-audio.md  #     采编 · 视频/音频三级回退
+│   │       ├── collect-web-archive.md  #     无损拓存模式卡
+│   │       └── confirm.md              #     确认：汇总规则 + 确认边界
+│   ├── web-archive/                    #   防复制页 / 云文档 / 懒加载长文无损拓存
+│   ├── image-extract/                  #   图片 OCR
+│   ├── video-extract/                  #   视频转写
+│   └── xhs-note/                       #   小红书笔记
 ├── prompts/                            # 开箱即用的入口提示词
 │   ├── 入口提示词-全自动.md             # 有子代理能力的工具
 │   └── 入口提示词-单对话框.md           # 纯聊天界面（三段式）
@@ -181,12 +185,22 @@ WebNote/
 │   ├── ds_vision.py                    # DeepSeek Vision 多图理解
 │   ├── extract-image-ocr.py            # 图片本地 OCR（RapidOCR）
 │   ├── extract-xhs.py                  # 小红书笔记拉取（需 Cookie）
-│   └── run-xhs-note.py                 # 小红书单条笔记流水线
+│   ├── run-xhs-note.py                 # 小红书单条笔记流水线
+│   ├── sync-agents-public.py           # 由 AGENTS.md 生成脱敏的 AGENTS.public.md
+│   └── _migrations/                    # 一次性维护脚本（已跑过；不进运行时）
 │
-├── docs/                               # 外部工具文档
-│   ├── BrowserSkill Installation Guide.md
-│   └── BrowserSkill Command Reference.md
-├── posts/                              # 可发布到博客平台的内容
+├── docs/                               # 文档
+│   ├── README.md                       #   文档索引 + 版本说明（v1 / v2 / v3）
+│   ├── architecture.md                 #   ★ v3 现行架构（流程理念 + 五步索引）
+│   ├── decisions.md                    #   决策记录
+│   ├── versions/                       #   已发表的历史版本（正文原样存档）
+│   └── vendor/                         #   第三方工具手册（BrowserSkill）
+├── tests/                              # 验证层（CI 跑同一套）
+│   ├── test_repo.py                    #   仓库不变量：技能/步骤/角色齐全、无私有路径泄漏
+│   ├── test-web-archive.ps1            #   web-archive 真机回归（headless Chromium）
+│   └── fixtures/                       #   离线 HTML 夹具
+├── config/default.yaml                 # 运行时默认参数（公开，不含机器路径）
+├── .env.example                        # 环境变量键名（真值放 .env）
 ├── runs/                               # 每次运行的产出（.gitignore 忽略）
 │   └── YYYY-MM-DD-主题/
 │       ├── 00-采编清单.md               # 调度器产出
@@ -199,7 +213,7 @@ WebNote/
 
 **`agents/` 里的三份文件是角色定义的唯一事实来源。** 派发子代理时把文件交给它，不要凭记忆复述——复述最容易漏掉的是铁律，而铁律恰恰是不能漏的部分。每个文件头部有 frontmatter 契约（`context` / `reads` / `writes` / `forbidden`）。
 
-**`agents/` 与 `steps/` 是流程资产，归项目根，不属于任何 skill 的私有实现。** `skills/webnote-workflow/SKILL.md` 只是路由卡，通过相对项目根的路径指向它们。
+**`agents/` 是流程资产；`steps/` 作为 `webnote-workflow` 的 `references/steps/` 存放**，SKILL.md 只做路由，通过相对项目根的路径指向它们。
 
 **注册薄壳（`.claude/agents/`）**：如果你想在支持 subagent 注册的工具里，让角色独立性由**工具机制**保证（而不是靠提示词恳求），把 `.claude/agents/` 里对应文件复制到该工具的注册位（如 WorkBuddy 的 `~/.workbuddy/agents/`、Claude Code 的 `.claude/agents/`）。薄壳只含工具白名单——例如核查官只给只读工具 + 只允许写自己的 `03-核查表.md`，从机制上保证它改不了笔记。角色定义本身不复制，始终指向 `agents/` 唯一事实来源。
 
@@ -221,7 +235,7 @@ python tools/check-env.py
 
 - **手动复制粘贴**：最稳，零依赖
 - **Obsidian 网页剪藏 / 简悦 / Cubox / Readwise Reader** 等稍后读工具
-- **BrowserSkill（可选）**：腾讯开源的浏览器桥接，可操控你已登录的浏览器读取页面，适合需要登录态的批量抓取（[安装指南](docs/BrowserSkill%20Installation%20Guide.md)）。**并非必需**，只是其中一种方式
+- **BrowserSkill（可选）**：腾讯开源的浏览器桥接，可操控你已登录的浏览器读取页面，适合需要登录态的批量抓取（[安装指南](docs/vendor/BrowserSkill%20Installation%20Guide.md)）。**并非必需**，只是其中一种方式
 
 **可选：若要用视频画面采集**（教程/课程/录屏类视频，提取画面文字与语义），需额外准备：
 
@@ -296,13 +310,13 @@ AI 出提案，你按确认键。判断标准：**这个动作如果错了，撤
 - **ASR（`tools/extract-video-asr.py`）用专用环境**：`.venv-asr`（Python 3.11 + faster-whisper + yt-dlp），已进 `.gitignore`。
   系统 conda 里是 Python 3.13 且没装 `faster_whisper`/`ctranslate2`，直接跑会 `ModuleNotFoundError`。
   ```bash
-  .venv-asr\Scripts\python.exe tools\extract-video-asr.py <视频URL>
+  .venv-asr/bin/python tools/extract-video-asr.py <视频URL>   # Windows: .venv-asr\Scripts\python.exe ...
   ```
-- **模型必须走本地快照**：默认 `large-v3`，由 `resolve_model_dir()` 解析成
-  `E:\data\models\HuggingFace\hub\models--Systran--faster-whisper-large-v3` 的 snapshot 目录再传给 `WhisperModel`。
+- **模型走本地快照**：默认 `large-v3`，由 `resolve_model_dir()` 从你本机的 HuggingFace 缓存
+  （`WEBNOTE_MODEL_DIR` 或默认缓存目录下 `models--Systran--faster-whisper-large-v3/snapshots/<hash>`）解析后传给 `WhisperModel`。
   只写模型名仍会联网校验；`large-v3-turbo` 的上游仓库已私有化，按名字加载会 401。
-- **git 推送走 Windows 侧**：WSL 里 `~/.ssh` 为空，`git push` 会卡在 publickey 等待。
-  在 Windows 终端（或 `cmd.exe /c "cd /d E:\Projects\bots\WebNote && git push"`）执行，密钥在 `C:\Users\stars\.ssh`。
+- **git 推送走 Windows 侧**：WSL 里可能没有 ssh agent 的密钥，`git push` 会卡在 publickey 等待。
+  在 Windows 终端（或 `cmd.exe /c "git -C <仓路径> push"`）执行。
 
 ### 参考
 

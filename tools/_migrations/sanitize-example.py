@@ -25,7 +25,7 @@ if hasattr(sys.stdout, "reconfigure"):
     except Exception:
         pass
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parent.parent.parent
 EXAMPLES = ROOT / "examples"
 
 # 绝对路径：盘符 + 至少一级目录 + 文件名

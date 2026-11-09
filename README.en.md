@@ -49,7 +49,7 @@ Copy the code block, replace the project path with yours, and send it along with
 
 Walk the five steps yourself, pointing the AI at the relevant definition file each time. To see what the output looks like first: [`examples/`](examples/).
 
-> Layering: `webnote-workflow` is the **orchestrator skill**; the three content pipelines live in `skills/image-extract`, `skills/video-extract`, `skills/xhs-note`, loaded by content type during collection. Five-step details: [Webpage note workflow.md](Webpage%20note%20workflow.md).
+> Layering: `webnote-workflow` is the **orchestrator skill**; the three content pipelines live in `skills/image-extract`, `skills/video-extract`, `skills/xhs-note`, loaded by content type during collection. Five-step details: [docs/architecture.md](docs/architecture.md).
 
 ---
 
@@ -73,17 +73,18 @@ Only **3 subagents**, not 5 — the scheduler handles the deterministic steps it
 Each agent lives in its own file under `agents/` at the project root, with a frontmatter contract (`context` / `reads` / `writes` / `forbidden`):
 
 ```
-agents/            project-root, platform-neutral, single source of truth
-├── classifier.md  Classifier — 4-way classification
-├── distiller.md   Distiller  — key points + source-type tags
-└── verifier.md    Verifier   — three-state check (context: fresh)
-steps/             step cards (no contract), also at project root
-├── collect.md / collect-image.md / collect-video-audio.md / confirm.md
+agents/                       project-root, platform-neutral, single source of truth
+├── classifier.md             Classifier — 4-way classification
+├── distiller.md              Distiller  — key points + source-type tags
+└── verifier.md               Verifier   — three-state check (context: fresh)
+skills/webnote-workflow/references/steps/
+├── collect.md / collect-image.md / collect-video-audio.md / collect-web-archive.md / confirm.md
+                              step cards (no contract), routed by SKILL.md
 ```
 
 **Hand the definition file to the subagent. Don't paraphrase the role from memory** — paraphrasing drops the hard rules first, and those are exactly the parts that must not be dropped.
 
-`agents/` and `steps/` are **workflow assets** owned by the project root, not by any single skill. `skills/webnote-workflow/SKILL.md` is just a router that points to them via project-root-relative paths.
+`agents/` is a **workflow asset** at the project root; the step cards live in `skills/webnote-workflow/references/steps/`. `skills/webnote-workflow/SKILL.md` is just a router that points to them via project-root-relative paths.
 
 **Registration shims (`.claude/agents/`)**: if you want role independence enforced by the *tool mechanism* rather than by prompt pleading, copy the matching shim from `.claude/agents/` into your tool's agent registry (e.g. WorkBuddy's `~/.workbuddy/agents/`, Claude Code's `.claude/agents/`). Each shim carries only a tool allow-list — the Verifier gets read-only tools plus write permission limited to its own `03-核查表.md`, so it *cannot* modify the notes. The role definition itself is never copied; it always points back to the single source of truth in `agents/`.
 

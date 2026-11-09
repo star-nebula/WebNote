@@ -7,7 +7,7 @@
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 $scripts = Join-Path $root 'skills\web-archive\scripts'
-$fixtures = Join-Path $root '_agent_scripts'
+$fixtures = Join-Path $root 'tests\fixtures'
 $tempRoot = Join-Path $env:TEMP ("web-archive-test-{0}" -f [guid]::NewGuid().ToString('N'))
 $profile = Join-Path $tempRoot 'profile'
 $renderRoot = Join-Path $tempRoot 'render'

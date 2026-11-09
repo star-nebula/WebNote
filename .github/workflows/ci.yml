@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  invariants:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: 安装测试依赖
+        run: python -m pip install --upgrade pip pytest
+
+      - name: 仓库不变量
+        run: python -m pytest tests -q
+
+      - name: Python 语法检查
+        run: python -m compileall -q tools tests
+
+      - name: Markdown 相对链接
+        run: python tools/_migrations/check-links.py

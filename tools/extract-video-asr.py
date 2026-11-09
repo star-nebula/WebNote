@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""
+r"""
 Agent 0 · 采编 - 视频 ASR 转写工具
 
 通过 yt-dlp 下载视频音频流，用 faster-whisper 进行语音转文字。
@@ -9,12 +9,12 @@ Agent 0 · 采编 - 视频 ASR 转写工具
   python extract-video-asr.py <视频URL> [--model small|medium|large-v3|large-v3-turbo] [--max-duration <分钟>]
 
 依赖：ffmpeg（已安装）+ 本仓库专用虚拟环境 .venv-asr（Python 3.11）
-      创建：C:\Users\stars\AppData\Local\Programs\Python\Python311\python.exe -m venv .venv-asr
+      创建：<python3.11> -m venv .venv-asr（不要用装了 faster-whisper 缺失的 3.13）
             .venv-asr\Scripts\python.exe -m pip install faster-whisper yt-dlp
       运行：.venv-asr\Scripts\python.exe tools\extract-video-asr.py <视频URL>
 
 模型：默认 large-v3，加载的是本机离线快照
-      E:\data\models\HuggingFace\hub\models--Systran--faster-whisper-large-v3
+      <WEBNOTE_MODEL_DIR 或 huggingface 缓存>/models--Systran--faster-whisper-large-v3/snapshots/<hash>
       （由 resolve_model_dir() 解析成目录路径传给 WhisperModel，不触网、不会 401）
       large-v3-turbo 的上游仓库已私有化，按名字加载会联网并 401，不要当默认值。
 

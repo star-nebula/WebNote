@@ -106,7 +106,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/render-md.ps1 `
 - 抽样比对：**首段 / 中段 / 末段**各一处；核对表格行列数、代码块数量
 - 报告统计：窗口数、块数、表格数、图片数、代码块数
 - 交付时写明保存路径；**有任何漏采或降级必须显式说明**
-- 自动化回归：`powershell -File _agent_scripts/test-web-archive.ps1`
+- 自动化回归：`powershell -File tests/test-web-archive.ps1`
 
 ## 输出契约
 
@@ -154,6 +154,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/render-md.ps1 `
 
 本 skill 是 WebNote 的无损存档分支，与知识提炼分支共用“真实来源、不编造、可核验”的底线。
 
-- 只要求保存、镜像或归档时：输出结构化 Markdown 到 `E:\knowledge\Resources\`，到此停止。
-- 同时要求知识笔记时：先完成本 skill 的采集与抽样校验，再从已落库来源提炼到 `E:\knowledge\Knowledge\`。
+- 只要求保存、镜像或归档时：输出结构化 Markdown 到 `<知识库根>/Resources/<主题>/<来源>/`，到此停止。
+- 同时要求知识笔记时：先完成本 skill 的采集与抽样校验，再从已落库来源提炼到 `<知识库根>/Knowledge/<领域>/`。
+- `<知识库根>` 由用户环境决定（本机配置 `KNOWLEDGE_ROOT`，未配置时问用户，不要猜）。
 - 无损存档模式禁止摘要、润色和知识重构；知识提炼模式不得替代原始存档。

@@ -13,28 +13,31 @@
 | 路径 | 是什么 | 什么时候读 |
 |---|---|---|
 | `skills/` | 五个技能：`webnote-workflow`（总编排）、`web-archive`、`image-extract`、`video-extract`、`xhs-note` | 开工先读对应 `SKILL.md`（只做路由），细则在 `references/` |
+| `skills/webnote-workflow/references/steps/` | 五步流程细则（collect / collect-image / collect-video-audio / collect-web-archive / confirm） | 手动流水线（路径 C）逐条读 |
 | `agents/` | 三个子角色：`classifier`（整理分类）、`distiller`（提炼笔记）、`verifier`（独立核查） | 派发 subagent 前读，把**文件路径**交给它 |
-| `steps/` | 五步流程细则 | 手动流水线（路径 C）逐条读 |
 | `prompts/` | 两条入口提示词：全自动 / 单对话框 | 工具不支持项目级技能时（路径 B） |
-| `tools/` | 采编加速器（Python 标准库为主，可选依赖按需装） | 采集、转写、拓存时 |
+| `tools/` | 采编加速器（Python 标准库为主，可选依赖按需装）+ `sync-agents-public.py` | 采集、转写、拓存时 |
+| `tools/_migrations/` | 一次性维护脚本（已跑过，不进运行时） | 只有做结构迁移、查断链、脱敏示例时才用 |
+| `tests/` | 仓库不变量（pytest）+ web-archive 真机回归 + 离线夹具 | 改完结构或流程后跑 |
 | `examples/` | 一次完整运行的全部产物 | 想知道产出长什么样 |
-| `Webpage note workflow.md` | 流程总纲 | 理解整体设计 |
+| `docs/` | 架构 `architecture.md`（v3 现行）、历史版本 `versions/`、决策 `decisions.md`、外部手册 `vendor/` | 理解整体设计 / 追溯版本 |
+| `config/` | 运行时默认参数（公开，不含机器路径） | 改阈值、媒体后缀、核查规则时 |
 | `persona/` | 角色原始文本与头像（本地私有，不入 git） | 只在需要追溯到历时读 |
 
-`agents/`、`steps/`、`tools/` 在运行中是权威，与 `README.md` 的表述冲突时以它们为准；
+`agents/`、`skills/webnote-workflow/references/steps/`、`tools/` 在运行中是权威，与 `README.md` 的表述冲突时以它们为准；
 与**用户最新直接指令**冲突时以用户为准。
 
 ## 三条使用路径
 
 - **A 装配技能**：把 `<本仓>/skills/` 链进工具的 skill 目录（Claude Code → `.claude/skills/`；Codex、pi 等按各自机制），之后自然对话即触发。
 - **B 提示词**：复制 `prompts/` 对应文件，替换路径。
-- **C 手动**：按 `steps/` 五步走，每步只加载当步定义。
+- **C 手动**：按 `skills/webnote-workflow/references/steps/` 五步走，每步只加载当步定义。
 
 先跑 `python tools/check-env.py`：缺依赖只影响对应媒体（PDF OCR / 视频转写），图文流程零依赖可用。
 
 ## 硬约束
 
-1. **技能优先，不凭记忆简化。** 这类任务开头加载 `webnote-workflow`；视频/音频另加 `video-extract`；防复制页、钉钉/飞书云文档、登录墙、懒加载长文另加 `web-archive` + `steps/collect-web-archive.md`。不要因为"看起来简单"跳过技能里的步骤。
+1. **技能优先，不凭记忆简化。** 这类任务开头加载 `webnote-workflow`；视频/音频另加 `video-extract`；防复制页、钉钉/飞书云文档、登录墙、懒加载长文另加 `web-archive` + `skills/webnote-workflow/references/steps/collect-web-archive.md`。不要因为"看起来简单"跳过技能里的步骤。
 2. **范围**：只做内容提取与笔记整理；无关的开发/运维工作不在本角色内，除非用户明确要求。
 3. **核查独立**：核查者必须是全新上下文，且不是笔记撰写者。做不到就按 `agents/verifier.md` 的降级声明**显式标注**，不要用一份看起来合规的表掩盖。
 4. **三条铁律**：① 正文不凭空编——提取不到就如实写「无」；② 核查独立；③ 不改写用户已有文件，命名冲突就用来源/日期后缀或另起一份；原始输入只读。
@@ -52,7 +55,8 @@
 
 1. `SKILL.md` 只做路由，细则放同目录 `references/`。
 2. 新增媒体能力：脚本进 `tools/`，并在 `tools/check-env.py` 登记「缺什么、怎么补」。
-3. 改流程：同步更新 `steps/`、`README.md` 能力表、受影响技能，以及本文件。
+3. 改流程：同步更新 `skills/webnote-workflow/references/steps/`、`README.md` 能力表、受影响技能，以及本文件；改完跑 `python tools/sync-agents-public.py`（重新生成公开版）与 `python -m pytest tests -q`（不变量）。
+4. 环境变量只把**键名**写进 `.env.example`，真值放 `.env`（已 gitignore）；任何真实路径、Cookie、Key 不进 `AGENTS.md` 以外的公开文件。
 4. `agents/` 是角色定义唯一来源；`.claude/agents/` 的同名三份是带 frontmatter 的适配层，改正文时两边保持一致。
 5. 不提交生成物与本机状态：`runs/`、`.workbuddy/`、`.memory/`、`.venv-asr/`、临时音视频。
 6. **本仓是公开仓**：只提交脱敏内容。私有路径、账号、密钥一律写在 `<!-- private:start -->` 块里，这些块不会进入公开版。

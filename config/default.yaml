@@ -1,0 +1,30 @@
+# WebNote 运行时默认参数
+# 公开文件：只放默认值，不放任何机器路径、密钥或私有目录。
+# 本地覆盖写 .env（见 .env.example）或运行时参数，不要改这里的历史默认。
+
+pipeline:
+  run_dir: runs                      # 每次运行的产物目录（gitignored）
+  media:
+    image: [png, jpg, jpeg, webp, gif, bmp, svg]
+    video: [mp4, mov, mkv, avi, webm, flv]
+    audio: [mp3, wav, m4a, aac, flac, ogg]
+    document: [pdf, docx, pptx, xlsx, md, txt, html]
+  thresholds:
+    page_text_min_chars: 200         # 可提取正文低于此值 → 视为正文缺失，走 ASR / 渲染截图
+    video_asr_enabled: true          # 视频无字幕时是否回退本地 ASR
+    asr_model: small                 # faster-whisper 模型尺寸
+    ocr_lang: ch                     # RapidOCR 语言
+    vision_max_images: 6             # 多图理解单次最多图数
+  notes:
+    max_points_per_note: 12          # 单篇笔记要点上限
+    require_source_type: true         # 每条要点必须标来源类型
+    forbidden: [摘要式改写, 未标注出处的推测]
+
+verification:
+  three_state: true                  # 三态判定：证实 / 存疑 / 无法证实
+  fresh_context_required: true       # 核查官必须是全新上下文
+  must_cite_original: true           # 判定必须引原文片段
+
+output:
+  naming: "{序号}-{产物名}.md"        # 00-采编清单 / 01-整理清单 / 02-笔记 / 03-核查表 / 04-待确认提案
+  stop_before_apply: true            # 任何落地动作前停在用户确认

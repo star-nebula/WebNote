@@ -1,5 +1,7 @@
 # 网页笔记工作流
 
+> **版本：v3（现行）。** v1「四步工作流」（2026-07-14）与 v2「五个 Agent 减到三个」（2026-08-04）见 [`versions/`](versions/)，版本关系见 [`docs/README.md`](README.md)。本文与代码同源，改流程只改这里。
+
 把"内容采集 → 整理分类 → 提炼笔记 → 确认发布"拆成**调度器（主会话） + 三个独立 Agent** 分工协作。
 
 不是每一步都需要独立的 AI 上下文。确定性的事调度器（主会话）自己干，只有真正需要独立判断的才交给 subagent。
@@ -9,7 +11,7 @@
 ```
 调度器（主会话）
 ├── 1. 采编（主会话自己做——确定性逻辑）
-│      读 steps/collect.md，按媒体类型路由，只加载命中的分支卡
+│      读 skills/webnote-workflow/references/steps/collect.md，按媒体类型路由，只加载命中的分支卡
 │      → 产出 00-采编清单.md
 │
 ├── 2. 创建 subagent：归类师 ← 独立上下文
@@ -28,7 +30,7 @@
 │      → 产出 03-核查表.md
 │
 └── 5. 确认（主会话自己做——汇总+约束）
-       读 steps/confirm.md
+       读 skills/webnote-workflow/references/steps/confirm.md
        → 产出 04-待确认提案.md（全部停在"待确认"）
 ```
 
@@ -50,13 +52,13 @@
 
 | 步 | 产物 | 执行者 | 定义文件 |
 |---|------|--------|---------|
-| 1 采编 | `00-采编清单.md` | 调度器 | [steps/collect.md](steps/collect.md) |
-| 2 归类师 | `01-整理清单.md` | subagent | [agents/classifier.md](agents/classifier.md) |
-| 3 笔记匠 | `02-笔记.md` | subagent | [agents/distiller.md](agents/distiller.md) |
-| 4 核查官 | `03-核查表.md` | subagent（全新） | [agents/verifier.md](agents/verifier.md) |
-| 5 确认 | `04-待确认提案.md` | 调度器 | [steps/confirm.md](steps/confirm.md) |
+| 1 采编 | `00-采编清单.md` | 调度器 | [steps/collect.md](../skills/webnote-workflow/references/steps/collect.md) |
+| 2 归类师 | `01-整理清单.md` | subagent | [agents/classifier.md](../agents/classifier.md) |
+| 3 笔记匠 | `02-笔记.md` | subagent | [agents/distiller.md](../agents/distiller.md) |
+| 4 核查官 | `03-核查表.md` | subagent（全新） | [agents/verifier.md](../agents/verifier.md) |
+| 5 确认 | `04-待确认提案.md` | 调度器 | [steps/confirm.md](../skills/webnote-workflow/references/steps/confirm.md) |
 
-每个 agent 定义文件的头部有 frontmatter 契约（`context` / `reads` / `writes` / `forbidden`）。派发规则见 [skills/webnote-workflow/SKILL.md](skills/webnote-workflow/SKILL.md)。
+每个 agent 定义文件的头部有 frontmatter 契约（`context` / `reads` / `writes` / `forbidden`）。派发规则见 [skills/webnote-workflow/SKILL.md](../skills/webnote-workflow/SKILL.md)。
 
 ## 两条关键设计
 
@@ -74,7 +76,7 @@
 | 已核实（转述源） | 出处在 OCR/ASR/Vision 产出中存在，但未回溯原始音画 |
 | 可疑 / 原文无依据 | 找不到出处，或表述超出原文 |
 
-判据与真实案例见 [agents/verifier.md](agents/verifier.md)。
+判据与真实案例见 [agents/verifier.md](../agents/verifier.md)。
 
 ---
 
@@ -96,13 +98,13 @@
 - Claude Code：`项目/skills/` → `.claude/skills/`
 - 不支持项目级 skill 的工具：走方式二
 
-> **注意**：`skills/webnote-workflow/SKILL.md` 是总路由卡；`skills/web-archive/SKILL.md` 承载防复制页、云文档和懒加载长文的无损拓存分支。角色定义（`agents/`）、步骤卡（`steps/`）与工具（`tools/`）是流程资产，归项目根。SKILL.md 第一步会先定位项目根（判定标准是目录下同时存在 `Webpage note workflow.md` 和 `tools/`），所以**完整流程必须在项目根工作区内运行**。若想在某工具里把角色注册成可复用的 subagent，把 `.claude/agents/` 里对应薄壳复制到该工具的注册位。
+> **注意**：`skills/webnote-workflow/SKILL.md` 是总路由卡；`skills/web-archive/SKILL.md` 承载防复制页、云文档和懒加载长文的无损拓存分支。角色定义（`agents/`）、步骤卡（`skills/webnote-workflow/references/steps/`）与工具（`tools/`）是流程资产，归项目根。SKILL.md 第一步会先定位项目根（判定标准是目录下同时存在 `docs/architecture.md` 和 `tools/`），所以**完整流程必须在项目根工作区内运行**。若想在某工具里把角色注册成可复用的 subagent，把 `.claude/agents/` 里对应薄壳复制到该工具的注册位。
 
 ### 方式二：一条提示词（不装配也能用）
 
-复制 [`prompts/入口提示词-全自动.md`](prompts/入口提示词-全自动.md) 给你的 AI，把其中的项目路径替换成你的实际路径。
+复制 [`prompts/入口提示词-全自动.md`](../prompts/入口提示词-全自动.md) 给你的 AI，把其中的项目路径替换成你的实际路径。
 
-没有 subagent 能力的聊天界面，改用 [`prompts/入口提示词-单对话框.md`](prompts/入口提示词-单对话框.md)。
+没有 subagent 能力的聊天界面，改用 [`prompts/入口提示词-单对话框.md`](../prompts/入口提示词-单对话框.md)。
 
 ### 方式三：手动文件流水线
 
@@ -110,7 +112,7 @@
 
 每次运行在 `runs/` 下建子目录 `YYYY-MM-DD-主题`，五个输出文件并列写入。原文不复制、不移动，仅记录来源路径。多次运行互不覆盖。
 
-完整范例见 [`examples/`](examples/)。
+完整范例见 [`examples/`](../examples/)。
 
 ---
 
@@ -121,4 +123,4 @@
 ---
 
 > 设计参考：[Agent OS 的第一课：会分工，才会用 Agent](https://www.axtonliu.ai/newsletters/ai-2/posts/agent-os-workstation-division)（分工隔离、独立核查、确认闸门三层设计）
-> 工具依赖：BrowserSkill（浏览器操作）见 [docs/BrowserSkill 安装指南](docs/BrowserSkill%20Installation%20Guide.md)，命令参考见 [docs/BrowserSkill 命令参考](docs/BrowserSkill%20Command%20Reference.md)
+> 工具依赖：BrowserSkill（浏览器操作）见 [docs/BrowserSkill 安装指南](vendor/BrowserSkill%20Installation%20Guide.md)，命令参考见 [docs/BrowserSkill 命令参考](vendor/BrowserSkill%20Command%20Reference.md)

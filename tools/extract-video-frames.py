@@ -293,8 +293,8 @@ def main():
         except Exception:
             pass
     if not ocr_python:
-        # 本机专用 venv 兜底（仅对本机有效，换机器请用 --ocr-python / OCR_PYTHON 指定）
-        for cand in [r"C:\Users\stars\.workbuddy\binaries\python\envs\ocr\Scripts\python.exe"]:
+        # 环境变量兜底（换机器请用 --ocr-python / OCR_PYTHON 指定）
+        for cand in [os.environ.get("OCR_PYTHON", "")]:
             if os.path.isfile(cand):
                 ocr_python = cand
                 break
