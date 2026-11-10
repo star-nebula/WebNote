@@ -21,7 +21,7 @@
 
 路径相对 `skills/webnote-workflow/`。每个文件头部的 frontmatter 是契约（`context` / `reads` / `writes` / `forbidden` / `produces` / `format_needles`），按它执行。
 
-**技能**——开工先读对应 `SKILL.md`（只做路由，细则在 `references/`）：
+**技能**——开工先读对应 `SKILL.md`（只做路由；细则放同目录的 `steps/` 或 `references/`）：
 
 - `webnote-workflow` → `skills/webnote-workflow/SKILL.md`（总编排）
 - `web-archive` → `skills/web-archive/SKILL.md`（防复制页 / 云文档无损拓存）
@@ -46,10 +46,10 @@
 
 | 路径 | 是什么 | 什么时候读 |
 |---|---|---|
-| `skills/` | 四个自有技能 + 一个外部副本 | 开工先读对应 `SKILL.md`，细则在 `references/` |
+| `skills/` | 四个自有技能 + 一个外部副本 | 开工先读对应 `SKILL.md`；`webnote-workflow` 的细则在 `steps/`，其余技能的细则在各自 `references/` |
 | `skills/webnote-workflow/steps/` | **流水线唯一定义**：`00`–`04` 五个步骤文件（文件名即顺序），每份自带契约与产出格式 | 手动流水线按编号逐条读 |
 | `skills/webnote-workflow/steps/branches/` | 采编分支卡：`image` / `video-audio` / `web-archive` | 只在 `00-collect.md` 判断命中时读 |
-| `skills/webnote-workflow/references/degraded-single-dialog.md` | 模式 B 三段式（无 subagent 时） | 工具开不了新会话时 |
+| `skills/webnote-workflow/mode-b-single-dialog.md` | 模式 B 三段式（无 subagent 时） | 工具开不了新会话时 |
 | `skills/browser-skill/` | 外部技能副本（`bsk` CLI 说明），**勿手改** | 只在改 `extract-webpage.py` 调用方式时读 |
 | `bot.yaml` | 只记一件事：外部技能的上游 / commit / 快照 / 文件数 | 刷新副本（`check_vendor.py --pull`）或查"这份是哪一代" |
 | `tools/` | 采编加速器（标准库为主，可选依赖按需装）+ 自检脚本 | 采集、转写、拓存、自检时 |
@@ -89,7 +89,7 @@
 
 ## 改本仓的约定
 
-1. `SKILL.md` 只做路由，细则放同目录 `references/`。
+1. `SKILL.md` 只做路由：流水线细则进 `steps/`，技能自有资料进同目录 `references/`。
 2. 新增媒体能力：脚本进 `tools/`，并在 `tools/check-env.py` 登记「缺什么、怎么补」。
 3. **改产出格式要动两处**：`runs/_template/<文件>` 与对应步骤文件的 `format_needles`；`test_template_matches_step_card` 会比对，只改一边就红（其余位置自动跟随，不要另抄）。
 4. 改流程：同步更新 `steps/`、`README.md` 的能力表、受影响技能，以及本文件；改完跑 `python -m pytest tests -q`（`pre-push` 钩子会自动跑同一套）。

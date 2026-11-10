@@ -36,7 +36,7 @@
 | **B 提示词** | 任何 AI | 把 [`AGENTS.md`](AGENTS.md) 和你的内容一起交给它 |
 | **C 手动** | 想逐步控制 | 按 [`steps/`](skills/webnote-workflow/steps/) 的 `00`–`04` 顺序走，每步只加载当步文件 |
 
-工具没有 subagent 能力（网页版 ChatGPT / Claude）：用模式 B 三段式，提示词在 [`degraded-single-dialog.md`](skills/webnote-workflow/references/degraded-single-dialog.md)。**三段必须分三个对话**——核查不能自己查自己。
+工具没有 subagent 能力（网页版 ChatGPT / Claude）：用模式 B 三段式，提示词在 [`mode-b-single-dialog.md`](skills/webnote-workflow/mode-b-single-dialog.md)。**三段必须分三个对话**——核查不能自己查自己。
 
 ### 起一次运行
 
@@ -66,8 +66,9 @@ cp -r runs/_template runs/2026-11-09-主题     # 表头是硬契约，别改
 WebNote/
 ├── AGENTS.md             # 给 AI 的入口（各工具按这个名字自动加载）
 ├── bot.yaml              # 只记一件事：外部技能的上游与 commit
-├── skills/               # SKILL.md 只做路由，细则在 references/ 与 steps/
-│   ├── webnote-workflow/ #   总编排 + steps/ 流水线定义 + 模式 B 提示词
+├── skills/               # SKILL.md 只做路由；流水线细则在 steps/，技能资料在各自 references/
+│   ├── webnote-workflow/ #   总编排 + steps/ 流水线 + 模式 B 提示词
+│   │   ├── mode-b-single-dialog.md  # 无 subagent 时的三段式
 │   │   └── steps/        #   ★ 00–04 五步：文件名即顺序，契约与产出格式都在这里
 │   │       └── branches/ #     采编分支卡：图片 / 视频音频 / 无损拓存
 │   ├── web-archive/      #   防复制页 / 云文档 / 懒加载长文的无损拓存
@@ -114,13 +115,11 @@ AI 出提案，你按确认键。判据：**这个动作错了，撤得回来吗
 
 **AI 可以无限地"想"和"建议"，但凡要"落地动手"，停在这道闸前。**
 
-## 本地环境约定（本机，不影响他人）
+## 开发环境
 
-- **测试依赖有声明**：`pip install -r requirements-dev.txt`（只有 `pytest` 与 `PyYAML`；工具本身以标准库为主）。CI 用它做缓存 key。
+- **测试依赖有声明**：`pip install -r requirements-dev.txt`（只有 `pytest` 与 `PyYAML`；工具本身以标准库为主）。CI 用它做缓存键。
 - **push 前本地自检**：`git config core.hooksPath .githooks`，之后每次 push 会先跑 pytest / 外部技能 / 链接检查（约 3 秒，离线）。急用时 `git push --no-verify` 跳过。
-- **ASR 用专用环境**：`.venv-asr`（Python 3.11 + faster-whisper + yt-dlp），已 gitignore。系统 Python 3.13 没有 `faster_whisper`，直接跑会 `ModuleNotFoundError`。
-- **模型走本地快照**：默认 `large-v3`，由 `resolve_model_dir()` 从 HuggingFace 缓存解析后传给 `WhisperModel`；只写模型名会联网校验，`large-v3-turbo` 上游已私有化，按名加载会 401。
-- **git 推送走 Windows 侧**：WSL 里可能没有 ssh 密钥，`git push` 会卡在 publickey。
+- 本机专属设置（ASR 专用环境、模型快照、推送走哪个 git）不属于通行约定，写在仓库外的 `AGENTS.local.md`。
 
 ## 参考与许可
 

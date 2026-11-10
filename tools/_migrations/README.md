@@ -22,4 +22,4 @@ python tools/_migrations/rename-definition-files.py --dry-run   # 改了名字�
 - `rename-definition-files.py` 的重命名表 / 正文替换表内置：`01-归类师.md → classifier.md`、`02-笔记匠.md → distiller.md`、`03-核查官.md → verifier.md`、`00-采编*.md → collect*.md`、`04-确认.md → confirm.md`。
 - `move-definitions-to-root.py` 只替换带 `skills/webnote-workflow/` 前缀的引用；裸引用需另加 `<项目根>/` 前缀。
 
-> 历史状态：2026-09-04 把 `agents/` + `steps/` 移到项目根；2026-11-09 又把 `steps/` 收进 `skills/webnote-workflow/references/steps/`，让 SKILL.md 的「细则放 references/」约定成立。现以 `AGENTS.md` 与 `docs/architecture.md` 为准，脚本仅作记录。
+> 历史状态：2026-09-04 把 `agents/` + `steps/` 移到项目根 → 2026-11-09 收进 `skills/webnote-workflow/references/steps/` → 2026-11-10 五步合一，改成 `skills/webnote-workflow/steps/`（`references/steps/` 与 `agents/` 已不存在）。现以 `AGENTS.md` 与 `docs/architecture.md` 为准，脚本仅作记录。

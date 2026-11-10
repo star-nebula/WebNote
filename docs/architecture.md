@@ -108,7 +108,7 @@
 
 把 [`AGENTS.md`](../AGENTS.md) 与内容一起交给 AI——它本身就是入口说明，含步骤清单、可写范围与执行规则。
 
-没有 subagent 能力的聊天界面，改用模式 B 的三段式提示词：[`degraded-single-dialog.md`](../skills/webnote-workflow/references/degraded-single-dialog.md)。
+没有 subagent 能力的聊天界面，改用模式 B 的三段式提示词：[`mode-b-single-dialog.md`](../skills/webnote-workflow/mode-b-single-dialog.md)。
 
 ### 方式三：手动文件流水线
 

@@ -29,7 +29,7 @@ agent_created: true
 | **流水线定义** | `skills/webnote-workflow/steps/` | 每次运行；文件名就是顺序，只读当步 |
 | 采编分支卡 | `skills/webnote-workflow/steps/branches/` | 判断为图片 / 视频音频 / 需无损拓存时 |
 | 无损拓存技能 | `skills/web-archive/SKILL.md` | 防复制页、云文档、登录态长文 |
-| 模式 B 三段式提示词 | `skills/webnote-workflow/references/degraded-single-dialog.md` | 无 subagent 能力时 |
+| 模式 B 三段式提示词 | `skills/webnote-workflow/mode-b-single-dialog.md` | 无 subagent 能力时 |
 | 采编工具 | `tools/*.py` | 见 `steps/00-collect.md` 的路由表 |
 
 **规则**：`steps/0N-*.md` 是唯一事实来源。派发 subagent 时把**文件路径**交给它，**不要凭记忆复述角色要求**——复述必然走样，最容易漏掉的是铁律。
@@ -70,7 +70,7 @@ agent_created: true
 
 同一对话内完成采编 / 归类 / 提炼 → **在核查前停下**，提示用户把 `00/01/02` 产物与原文带到**新对话**，让新对话读 `<项目根>/skills/webnote-workflow/steps/03-verify.md` 执行核查 → 核查表带回后读 `steps/04-confirm.md` 做确认。
 
-三段的具体提示词（用户直接复制粘贴）见 `<项目根>/skills/webnote-workflow/references/degraded-single-dialog.md`。
+三段的具体提示词（用户直接复制粘贴）见 `<项目根>/skills/webnote-workflow/mode-b-single-dialog.md`。
 
 **核查那道必须另开新对话。** 别在笔记匠那个对话里接着问。
 

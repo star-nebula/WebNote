@@ -16,7 +16,7 @@ It solves exactly one problem: **stop second- or third-hand transcription from m
 
 ### Zero setup works
 
-The value is the **workflow design and role definitions**, not the Python scripts. Without them you paste content in manually and the pipeline still runs end to end.
+The core value is the **workflow design and the step contracts**, not the Python scripts. Without them you paste the content in manually and the pipeline still runs end to end.
 
 | What you process | What you additionally need |
 |---|---|
@@ -26,7 +26,7 @@ The value is the **workflow design and role definitions**, not the Python script
 | Video / audio speech | `pip install faster-whisper` + `ffmpeg` |
 | Image / video understanding | the above + `DEEPSEEK_API_KEY` |
 
-Not sure what your machine can do: `python tools/check-env.py` (standard library only). Missing capabilities only affect their own media type.
+Not sure what your machine can do: `python tools/check-env.py` (standard library only, run it before installing anything). Missing capabilities only affect their own media type.
 
 ### Three ways to use it
 
@@ -34,9 +34,9 @@ Not sure what your machine can do: `python tools/check-env.py` (standard library
 |---|---|---|
 | **A Install the skill** | Tools with project-level skills | Link `<repo>/skills/` into the tool's skills dir; conversation triggers it naturally afterwards |
 | **B One prompt** | Any AI | Hand [`AGENTS.md`](AGENTS.md) over together with your content |
-| **C Manual** | Step-by-step control | Walk [`steps/`](skills/webnote-workflow/steps/), loading `00`–`04` in filename order |
+| **C Manual** | Step-by-step control | Walk [`steps/`](skills/webnote-workflow/steps/), loading `00`–`04` in filename order, one file per step |
 
-No subagent support (ChatGPT / Claude web): use Mode B, the three-part prompt in [`degraded-single-dialog.md`](skills/webnote-workflow/references/degraded-single-dialog.md). The three parts **must** be three separate conversations — the verifier cannot be the writer.
+No subagent support (ChatGPT / Claude web): use Mode B, the three-part prompt in [`mode-b-single-dialog.md`](skills/webnote-workflow/mode-b-single-dialog.md). The three parts **must** be three separate conversations — the verifier cannot be the writer.
 
 ### Start a run
 
@@ -44,7 +44,7 @@ No subagent support (ChatGPT / Claude web): use Mode B, the three-part prompt in
 cp -r runs/_template runs/2026-11-09-topic     # headers are a contract — don't edit them
 ```
 
-The five files are filled in order by scheduler / classifier / distiller / verifier / scheduler. Originals are never copied or moved — only their paths are recorded in `00`.
+The five files are filled in order by scheduler / classifier / distiller / verifier / scheduler. Originals are never copied or moved — only their paths are recorded in `00`. Anything that went wrong during the run goes into that run's `## 运行异常` section in `00`; the same failure twice should become a test.
 
 ## Why verification has three states, not two
 
@@ -64,20 +64,33 @@ Case study: [`docs/history/`](docs/history/2026-09-03-two-state-example/). **Tha
 
 ```
 WebNote/
-├── AGENTS.md             # AI entry (auto-loaded by agents under this name)
+├── AGENTS.md             # AI entry (auto-loaded under this name); public, tracked
 ├── bot.yaml              # the one machine-readable fact: upstream of vendored skills
-├── skills/               # SKILL.md routes; details live in references/ and steps/
-│   ├── webnote-workflow/ #   orchestrator + steps/ pipeline + single-dialog fallback
+├── skills/               # SKILL.md routes only; pipeline detail in steps/, per-skill data in references/
+│   ├── webnote-workflow/ #   orchestrator + steps/ pipeline + Mode B prompt
+│   │   ├── mode-b-single-dialog.md  # three-part prompt when subagents are impossible
 │   │   └── steps/        #   ★ 00–04: filename order is the pipeline; contracts live here
+│   │       └── branches/ #     collection branches: image / video-audio / web-archive
 │   ├── web-archive/      #   lossless archiving of copy-protected / cloud docs
 │   ├── image-extract/    #   OCR + visual semantics
 │   ├── video-extract/    #   ASR + frame sampling
 │   └── browser-skill/    #   vendored external skill (Tencent/BrowserSkill) — don't edit
-├── runs/_template/       # ★ five empty skeletons: the only output-format contract
+├── runs/
+│   ├── _template/        # ★ five empty skeletons: the only output-format contract, read-only
+│   └── YYYY-MM-DD-topic/ #   one run (local, never committed)
 ├── tools/                # collection accelerators + self-checks (all deps optional)
-├── tests/                # repo invariants (CI) · tests/manual/ needs a real browser
-├── docs/                 # architecture · decisions · versions/ · history/ (obsolete, don't copy)
-└── .env.example          # env var names only
+│   ├── check-env.py      #   environment self-check
+│   ├── check-links.py    #   relative Markdown links
+│   ├── check_vendor.py   #   is the vendored copy still the upstream one (--pull to refresh)
+│   └── extract-*.py      #   document / web / video / image extraction
+├── tests/                # repo invariants (CI)
+│   └── manual/           #   real-browser regressions + offline fixtures (not in CI)
+├── docs/
+│   ├── architecture.md   # current architecture
+│   ├── decisions.md      # decision log
+│   ├── versions/         # published earlier versions (text kept as published)
+│   └── history/          # archive: obsolete formats, kept only to explain where rules came from
+└── .env.example          # env var names only (values live in .env)
 ```
 
 ## Execution modes
@@ -88,12 +101,26 @@ WebNote/
 | **B Single-dialog** | Tool can't open a new session | Collect + classify + distill in one dialog → **stop** → verify in a new conversation → confirm |
 | **C Lossless archive** | Copy-protected, cloud docs, login-walled pages | Archive only, no summarizing; distill separately afterwards |
 
-Verification is the safety gate: **an agent cannot audit itself.** If a fresh context is impossible, require the explicit degradation notice in `steps/03-verify.md` — an unmarked degradation is a compliant-looking table hiding a real risk.
+Verification is the safety gate: **an agent cannot audit itself.** If a fresh context is impossible, declare the degradation explicitly as `steps/03-verify.md` requires — an unmarked degradation is a compliant-looking table hiding a real risk.
 
 ## Confirmation boundary
 
-Any delete / archive / publish / long-term-memory write stops at "pending confirmation". The AI may think and propose without limit; anything that *lands* waits for your keypress.
+The AI produces a proposal; you press the key. The test: **if this action is wrong, can it be undone?**
+
+| Must stop at "pending confirmation" | The scheduler may do directly |
+|---|---|
+| Delete / archive / move material | Classify URLs, call CLI tools, read and distill |
+| Publish (article / social post) | List items, write proposals, give advice |
+| Write to long-term memory / the knowledge base | — |
+
+**The AI may think and propose without limit; anything that *lands* waits behind this gate.**
+
+## Development environment
+
+- **Test dependencies are declared**: `pip install -r requirements-dev.txt` (only `pytest` and `PyYAML`; the tools themselves are mostly standard library). CI uses it as the cache key.
+- **Pre-push self-check**: run `git config core.hooksPath .githooks` once; every push then runs pytest / vendored-skill / link checks first (about 3 seconds, offline). Skip with `git push --no-verify` when in a hurry.
+- Machine-specific settings (dedicated ASR venv, local model snapshots, which git binary is used for pushing) are not part of the shared contract; they live in the untracked `AGENTS.local.md`.
 
 ## License
 
-MIT — see [LICENSE](LICENSE). Vendored tool: [BrowserSkill](https://github.com/Tencent/BrowserSkill).
+MIT — see [LICENSE](LICENSE). Vendored tool: [BrowserSkill](https://github.com/Tencent/BrowserSkill) (Tencent, open source).
