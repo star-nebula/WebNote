@@ -161,42 +161,34 @@ def test_run_template_is_tracked_not_ignored():
 
 
 def test_vendored_skill_is_a_real_copy():
-    """外部技能必须是真副本：不是链接，且来源声明是 copy 模式、只同步它一个。"""
+    """外部技能必须是真副本：真目录、无链接、只此一份，不经本地中转。"""
     vendored = ROOT / "skills/browser-skill"
     assert vendored.is_dir() and not vendored.is_symlink(), "skills/browser-skill 必须是真实目录"
+    assert not any(p.is_symlink() for p in vendored.rglob("*")), "副本里不该有符号链接"
     assert "name: browser-skill" in read(vendored / "SKILL.md")[:400], "副本缺 frontmatter 或名字不对"
-
-    cfg = yaml.safe_load((ROOT / ".skillshare/config.yaml").read_text(encoding="utf-8")) or {}
-    targets = cfg.get("targets") or []
-    assert len(targets) == 1, "只允许一个 vendored target"
-    skills = targets[0].get("skills") or {}
-    assert skills.get("mode") == "copy", "必须 copy 模式，symlink 会让仓库依赖外部路径"
-    assert skills.get("include") == ["browser-skill"], "只同步 browser-skill，别把整个技能库拖进来"
+    assert not (ROOT / ".skillshare").exists(), "真源记在 bot.yaml，不要再加一份本地中转声明（见 docs/decisions.md）"
 
 
 def test_vendored_manifest_records_upstream():
     """外部技能的真源必须记在 bot.yaml：上游仓库 + 具体 commit + 快照日期。
 
-    .skillshare/config.yaml 只说明「从哪里 copy」，说不清「上游是哪一代」；
-    exe 版本号也不行（别人不一定有那个 exe）。
+    exe 版本号不行（别人不一定有那个 exe），本地中转副本也不行（那不是真源）。
     """
     bot = yaml.safe_load((ROOT / "bot.yaml").read_text(encoding="utf-8")) or {}
     entries = bot.get("vendored") or []
     assert entries, "bot.yaml 缺 vendored 段（外部技能的来源声明）"
-
-    cfg = yaml.safe_load((ROOT / ".skillshare/config.yaml").read_text(encoding="utf-8")) or {}
-    included = (cfg["targets"][0]["skills"] or {}).get("include") or []
 
     for v in entries:
         where = f"vendored: {v.get('path')}"
         assert v["upstream"].startswith("https://github.com/"), f"{where} 的 upstream 必须是仓库地址"
         assert re.fullmatch(r"[0-9a-f]{40}", str(v["ref"])), f"{where} 的 ref 必须是完整 commit sha"
         assert re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(v["snapshot"])), f"{where} 的 snapshot 必须是日期"
-        assert Path(v["path"]).name in included, f"{where} 没在 .skillshare 的 include 里（两边对不上）"
 
         path = ROOT / v["path"]
         assert path.is_dir(), f"{where} 副本目录不存在"
         assert not any(p.is_symlink() for p in path.rglob("*")), f"{where} 里不该有符号链接"
+        actual = len([p for p in path.rglob("*") if p.is_file()])
+        assert v.get("files") == actual, f"{where} 记了 {v.get('files')} 个文件，实际 {actual}（跑 --pull 修）"
 
 
 @pytest.mark.parametrize("name", ["browser-skill"])

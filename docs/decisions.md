@@ -4,19 +4,31 @@
 
 ## 外部技能：副本进仓、真源记在 bot.yaml，exe 版本号不算真源
 
-**问题**：`browser-skill` 来自腾讯的 `Tencent/BrowserSkill`（MIT），既不由本仓维护，也不是技能库维护的——技能库那份是 2026-09-30 从 bsk 产物人工搬进去的快照。链条是三跳：上游仓库 → `crates/bsk-cli/skill/` → 技能库 → 本仓 `skills/browser-skill/`。`.skillshare/config.yaml` 只说得清最后一跳。
+**问题**：`browser-skill` 来自腾讯的 `Tencent/BrowserSkill`（MIT），既不由本仓维护，也不是技能库维护的——技能库那份是 2026-09-30 从 bsk 产物人工搬进去的快照。链条是三跳：上游仓库 → `crates/bsk-cli/skill/` → 技能库 → 本仓 `skills/browser-skill/`，最后一跳当时用 `.skillshare` 的 `mode: copy` 镜像。
 
 **发现**：查上游时发现我们落后一代。上游 2026-11 起把单文件 `SKILL.md`（229 行 / 11,406 B）改成「主体 131 行 + `references/` 13 个文件 / 81 KB」，上游 `crates/bsk-cli/src/skill_install/` 里的 `legacy-digests.txt`、`provenance.rs`、`sync.rs` 就是这次布局迁移的痕迹。
 
 **决定**：
 
-1. **真源写进 `bot.yaml` 的 `vendored:` 段**（`upstream` / `subdir` / `ref`（完整 commit sha）/ `snapshot` / `layout`），因为 `.skillshare` 只描述「从哪里 copy」，说不清「上游是哪一代」。
+1. **真源写进 `bot.yaml` 的 `vendored:` 段**（`upstream` / `subdir` / `ref`（完整 commit sha）/ `snapshot` / `layout` / `files`），因为本地镜像配置只描述「从哪里 copy」，说不清「上游是哪一代」。
 2. **不用 `bsk --version` 当基准**：别人机器上不一定有那个 exe，而且 exe 与仓库本来就可能不同代。
-3. **检查分两层**：`tools/check_vendor.py`（离线：副本存在、是真目录不是链接、文件数、是��与 include 对得上；进 CI）与 `--online`（拉上游 tree API 逐个比 blob sha；联网、可能限流，不进 CI）。
+3. **检查分两层**：`tools/check_vendor.py`（离线：副本存在、是真目录不是链接、文件数与 `bot.yaml` 一致；进 CI）与 `--online`（按记录的 ref 拉上游 tree API 逐个比 blob sha，并报上游 HEAD 是否前进；联网、可能限流，不进 CI）。
 4. **副本按上游布局整体覆盖**，不只换 `SKILL.md`——主体里引用了每个 references 文件，只同步一半会让 agent 读到悬空引用（`test_vendored_references_all_reachable` 守着这条）。
-5. **库那一跳保留**：skillshare 的 `include` 按 `<name>/SKILL.md` 找技能，上游是 `crates/bsk-cli/skill/SKILL.md`（目录名 `skill`），直连需要先改名，比中转更绕。同步时两份一起换，否则下次 `skillshare sync -p` 会把副本退回旧版。
+5. ~~**库那一跳保留**：skillshare 的 `include` 按 `<name>/SKILL.md` 找技能，上游是 `crates/bsk-cli/skill/SKILL.md`（目录名 `skill`），直连需要先改名，比中转更绕。同步时两份一起换，否则下次 `skillshare sync -p` 会把副本退回旧版。~~ **已推翻（2026-11-10）**，见下。
 
-**代价**：仓库多 88 KB 与 13 个文件；`check_vendor.py --online` 依赖 `gh` 或 `GITHUB_TOKEN`（匿名 API 会 403 限流）。
+**代价**：仓库多 88 KB 与 13 个文件；`--online` / `--pull` 依赖 `gh` 或 `GITHUB_TOKEN`（匿名 API 会 403 限流）。
+
+**修订（2026-11-10）：删掉 `.skillshare/`，改上游直取**
+
+上面第 5 条把「本地中转」当成了省事，实际反了：
+
+- 中转那一跳（技能库 `E:\Agent\skills\browser-skill`）既不是本仓维护，也不是上游维护，却是链上唯一「谁都没责任更新」的一环；
+- 它把真源方向倒置了——`skillshare sync -p` 是从库往仓复制，库没更新时跑一次就静默回退（`docs/README.md` 当时自己就写着这句警告）；
+- 维护成本落在人身上：升版必须两份一起换，漏一份等于白做。
+
+现在只有两跳：上游 `Tencent/BrowserSkill` → 本仓 `skills/browser-skill/`。`check_vendor.py --pull` 拉上游 HEAD 的 tree、按 blob sha 下载原始字节整体覆盖、删掉上游已没有的文件，并把 `ref` / `snapshot` / `files` 写回 `bot.yaml`。`--online` 改为对照**记录的代际**，因此它同时回答两个问题：副本有没有被手改、上游有没有前进。
+
+测试相应改为断言「副本是真目录、无链接、`.skillshare` 不许回来、文件数与 `bot.yaml` 一致」。代价：升版需要 `gh` 登录或 `GITHUB_TOKEN`；不再有本地离线镜像源。
 
 ## 记忆分层：核心记忆进 AGENTS.md，长期记忆进 memory/
 

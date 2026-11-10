@@ -12,32 +12,22 @@
 
 BrowserSkill 是本仓唯一的外部工具依赖，只在「图文但正文为空 / 需要渲染」时被 `tools/extract-webpage.py` 调用。
 
-它有三个来源层级，别混：
+它有两个来源层级，别混：
 
 | 层 | 位置 | 谁维护 |
 |---|---|---|
 | 真源 | [Tencent/BrowserSkill](https://github.com/Tencent/BrowserSkill) 的 `crates/bsk-cli/skill/` | 上游 |
-| 技能库副本 | `browser-skill/`（本机技能库内） | 人工搬运，已落后于上游 |
 | 本仓副本 | `skills/browser-skill/`（`SKILL.md` + `references/` 14 个文件） | 本仓，不改内容 |
 
-真源与代际记在 `bot.yaml` 的 `vendored:` 段（上游地址 + 完整 commit + 快照日期）。`bsk` 可执行文件的版本号**不是**基准——别人机器上不一定有那个 exe。
-
-检查：
+真源与代际记在 `bot.yaml` 的 `vendored:` 段（上游地址 + 完整 commit + 快照日期 + 文件数）。`bsk` 可执行文件的版本号**不是**基准——别人机器上不一定有那个 exe。
 
 ```bash
-python tools/check_vendor.py            # 离线：副本存在、是真目录、文件数、与 .skillshare 对齐（进 CI）
-python tools/check_vendor.py --online   # 与上游逐个文件比 blob sha（需联网 / gh 登录）
+python tools/check_vendor.py            # 离线：副本存在、是真目录、文件数与 bot.yaml 一致（进 CI）
+python tools/check_vendor.py --online   # 与 bot.yaml 记的代际逐个比 blob sha，并报上游是否又前进（需 gh 登录）
+python tools/check_vendor.py --pull     # 升到上游 HEAD：覆盖副本、删多余文件、回写 ref/snapshot/files
 ```
 
-刷新副本（仅在有技能库的机器上需要，两份同时覆盖，否则下次 sync 会退回旧版）：
-
-```bash
-# 1. 拉上游 crates/bsk-cli/skill/ 的 SKILL.md + references/
-# 2. 同时覆盖 技能库的 browser-skill/ 与本仓 skills/browser-skill/
-# 3. 跑 check_vendor.py --online 确认一致，更新 bot.yaml 的 ref / snapshot
-```
-
-`skillshare sync -p` 仍可用，但它只是把技能库那份镜像过来；技能库没更新时跑它等于回退。
+不要再经由本地第二份副本（如技能库里的 `browser-skill/`）中转——两份都要维护，漏一份就会被镜像回旧版。
 
 ## 三个版本的关系
 

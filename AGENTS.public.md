@@ -48,8 +48,7 @@
 | `skills/webnote-workflow/references/degraded-single-dialog.md` | 模式 B 三段式（无 subagent 时） | 工具开不了新会话时 |
 | `agents/` | 三个子角色定义，平台无关，唯一真源 | 派发前读，把**文件路径**交给它 |
 | `skills/browser-skill/` | 外部技能副本（`bsk` CLI 说明），**勿手改** | 只在改 `extract-webpage.py` 调用方式时读 |
-| `.skillshare/config.yaml` | 副本来源声明：技能库 `browser-skill` → `skills/`，`mode: copy` | 刷新副本时（`skillshare sync -p`） |
-| `bot.yaml` | 只记一件事：外部技能的上游 / commit / 快照 | 刷新副本或查"这份是哪一代" |
+| `bot.yaml` | 只记一件事：外部技能的上游 / commit / 快照 / 文件数 | 刷新副本（`check_vendor.py --pull`）或查"这份是哪一代" |
 | `tools/` | 采编加速器（标准库为主，可选依赖按需装）+ 自检脚本 | 采集、转写、拓存、自检时 |
 | `tools/_migrations/` | 一次性维护脚本（已跑过，不进运行时） | 只有做结构迁移或脱敏历史件时才用 |
 | `tests/` | 仓库不变量（pytest，进 CI） | 改结构、改表头、改生成逻辑后跑 |

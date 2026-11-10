@@ -5,7 +5,9 @@
 #   都有自己的发现约定，工具直接按路径读，不需要额外注册文件；
 #   而「这份副本来自上游哪一代」没有任何约定能表达，只能显式记下来。
 #
-# 消费者：tools/check_vendor.py（离线断言 + --online 比对上游 blob）。
+# 消费者：tools/check_vendor.py（离线断言 / --online 比对 / --pull 升版）。
+# 真源只有这里：上游仓库 + 完整 commit。不要再经由本地第二份副本（如技能库那个同名
+# 目录）中转——两份都要维护，漏一份就会被镜像回旧版。
 schema: 1
 
 name: WebNote
@@ -14,7 +16,8 @@ vendored:
   - path: skills/browser-skill
     upstream: https://github.com/Tencent/BrowserSkill
     subdir: crates/bsk-cli/skill          # 上游技能真身所在目录（monorepo 内）
-    ref: e380cbcce3d2b77a49cabff4e104934ed7fa16e5
-    snapshot: 2026-11-09
+    ref: e1f125ce4d5a4ab53962de1fa2bf902f7feda80f
+    snapshot: 2026-11-10
+    files: 14
     layout: SKILL.md + references/         # 上游 2026-11 由单文件改为 主体 + references
-    note: 经技能库 E:\Agent\skills\browser-skill 中转，对应 .skillshare/config.yaml 的 include
+    note: 上游直取；升版用 python tools/check_vendor.py --pull（会回写 ref / snapshot / files）

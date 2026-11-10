@@ -123,4 +123,4 @@
 ---
 
 > 设计参考：[Agent OS 的第一课：会分工，才会用 Agent](https://www.axtonliu.ai/newsletters/ai-2/posts/agent-os-workstation-division)（分工隔离、独立核查、确认闸门三层设计）
-> 工具依赖：BrowserSkill（`bsk` CLI，只在正文为空 / 需渲染时调用）。说明副本在 [`skills/browser-skill/`](../skills/browser-skill/SKILL.md)（skillshare `copy` 同步，勿手改），命令以 `bsk --help` 为准。
+> 工具依赖：BrowserSkill（`bsk` CLI，只在正文为空 / 需渲染时调用）。说明副本在 [`skills/browser-skill/`](../skills/browser-skill/SKILL.md)（从上游直取，`python tools/check_vendor.py --pull` 升版，勿手改），命令以 `bsk --help` 为准。
