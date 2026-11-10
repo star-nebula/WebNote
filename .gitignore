@@ -36,4 +36,3 @@ __pycache__/
 # ===== 私有入口与角色原始件：只在本机 =====
 # 入口 AGENTS.md 进 git（工具按这个名字加载）；本机叠加层 AGENTS.local.md 不进
 /AGENTS.local.md
-/persona/

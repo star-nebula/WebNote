@@ -251,7 +251,3 @@ def test_entry_is_public_and_overlay_stays_private():
         clash = headings(read(ROOT / "AGENTS.md")) & headings(read(overlay))
         assert not clash, f"AGENTS.local.md 不该复述入口的小节：{sorted(clash)}"
 
-    persona = subprocess.run(
-        ["git", "ls-files", "persona"], cwd=ROOT, capture_output=True, text=True
-    ).stdout.strip()
-    assert not persona, f"persona/ 是私有头像，不该进 git：{persona}"
