@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WebNote · 运转地图</title>
+<style>
+  :root{
+    --bg:#fbfbf9; --fg:#1c1c1a; --muted:#6b6b66; --line:#e2e0da; --card:#fff;
+    --sched:#5b6b7a; --iso:#2f6f8f; --fresh:#a8641b; --ok:#2f7d51; --warn:#a8641b;
+    --mono:ui-monospace,SFMono-Regular,"Cascadia Mono","JetBrains Mono",Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{ --bg:#151614; --fg:#eceae4; --muted:#9b988f; --line:#2b2c28; --card:#1c1d1a;
+           --sched:#93a8ba; --iso:#6fb6d6; --fresh:#d9a05b; --ok:#63b98b; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.65 var(--sans);
+       -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1180px;margin:0 auto;padding:56px 28px 96px}
+  header.top{border-bottom:1px solid var(--line);padding-bottom:28px;margin-bottom:44px}
+  .kicker{font:600 11.5px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  h1{font-size:34px;line-height:1.2;margin:14px 0 10px;letter-spacing:-.02em}
+  h1 small{display:block;font-size:15px;font-weight:400;color:var(--muted);letter-spacing:0;margin-top:10px}
+  h2{font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);
+     margin:56px 0 18px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+  h3{font-size:15px;margin:0 0 6px}
+  p{margin:0 0 12px}
+  code{font:13px var(--mono);background:color-mix(in srgb,var(--fg) 7%,transparent);
+       padding:1px 5px;border-radius:4px}
+  .lede{font-size:16.5px;color:var(--muted);max-width:72ch}
+  .pill{display:inline-block;font:600 10.5px/1 var(--mono);letter-spacing:.08em;
+        padding:4px 7px;border-radius:999px;border:1px solid var(--line);color:var(--muted);
+        vertical-align:middle;white-space:nowrap}
+  .pill.sched{color:var(--sched);border-color:color-mix(in srgb,var(--sched) 45%,transparent)}
+  .pill.iso{color:var(--iso);border-color:color-mix(in srgb,var(--iso) 45%,transparent)}
+  .pill.fresh{color:var(--fresh);border-color:color-mix(in srgb,var(--fresh) 50%,transparent)}
+
+  /* 五步流水线 */
+  .pipe{display:grid;grid-template-columns:repeat(5,1fr);gap:0;margin:0 0 8px}
+  .step{position:relative;background:var(--card);border:1px solid var(--line);
+        border-radius:12px;padding:16px 15px 14px;margin-right:26px;box-shadow:0 1px 0 rgba(0,0,0,.02);
+        min-width:0;overflow-wrap:anywhere}
+  .step:last-child{margin-right:0}
+  .step::after{content:"→";position:absolute;right:-20px;top:50%;transform:translateY(-50%);
+               color:var(--muted);font-size:15px}
+  .step:last-child::after{content:""}
+  .step .n{font:700 11px/1 var(--mono);color:var(--muted);letter-spacing:.1em}
+  .step h3{margin:8px 0 4px;font-size:15px}
+  .step .who{font-size:12.5px;color:var(--muted);margin-bottom:10px}
+  .kv{font:11.5px/1.6 var(--mono);color:var(--muted);border-top:1px dashed var(--line);
+      padding-top:9px;margin-top:9px;overflow-wrap:anywhere}
+  .kv b{color:var(--fg);font-weight:600}
+  .step.s-sched{box-shadow:inset 3px 0 0 var(--sched)}
+  .step.s-iso{box-shadow:inset 3px 0 0 var(--iso)}
+  .step.s-fresh{box-shadow:inset 3px 0 0 var(--fresh)}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px;margin:0 0 8px}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font:600 11px/1.4 var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+  td code{font-size:12.5px}
+  tbody tr:hover{background:color-mix(in srgb,var(--fg) 3%,transparent)}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px}
+  .card ol,.card ul{margin:6px 0 0;padding-left:20px}
+  .card li{margin:5px 0}
+  .note{font-size:13px;color:var(--muted)}
+
+  /* 加载阶梯 */
+  .ladder{display:flex;flex-direction:column;gap:0}
+  .rung{display:grid;grid-template-columns:150px 1fr;gap:18px;padding:13px 0;
+        border-bottom:1px solid var(--line);align-items:baseline}
+  .rung:last-child{border-bottom:none}
+  .rung .file{font:12.5px var(--mono);color:var(--iso);word-break:break-all}
+  .rung .what{font-size:13.5px}
+  .rung .what b{font-weight:600}
+
+  /* 落库流 */
+  .flow{display:grid;grid-template-columns:1fr 34px 1fr 34px 1fr;align-items:stretch;gap:0}
+  .node{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+  .node .t{font:600 12px var(--mono);letter-spacing:.06em;color:var(--muted);margin-bottom:8px}
+  .node ul{margin:0;padding-left:18px;font-size:13px}
+  .node li{margin:4px 0}
+  .arrow{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:18px}
+  .gate{border-color:color-mix(in srgb,var(--fresh) 55%,transparent);
+        background:color-mix(in srgb,var(--fresh) 7%,var(--card))}
+
+  /* 验证闸 */
+  .gates{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .gate-c{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:15px}
+  .gate-c .t{font:600 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .gate-c .big{font:600 15px/1.4 var(--sans);margin:7px 0 8px}
+  .gate-c ul{margin:0;padding-left:17px;font-size:12.5px;color:var(--muted)}
+  .gate-c li{margin:3px 0}
+
+  .rules{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:6px}
+  .rule{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--fresh);
+        border-radius:10px;padding:15px 16px;font-size:13.5px}
+  .rule b{display:block;font-size:14px;margin-bottom:5px}
+
+  footer{margin-top:64px;padding-top:22px;border-top:1px solid var(--line);
+         font-size:12.5px;color:var(--muted);display:flex;flex-wrap:wrap;gap:8px 22px}
+
+  @media (max-width:1000px){
+    .pipe{grid-template-columns:1fr;}
+    .step{overflow-wrap:anywhere;}
+    .step{margin:0 0 26px}
+    .step::after{content:"↓";right:auto;left:50%;top:auto;bottom:-21px;transform:translateX(-50%)}
+    .step:last-child{margin-bottom:0}
+    .grid2,.gates,.rules{grid-template-columns:1fr}
+    .flow{grid-template-columns:1fr}
+    .arrow{height:30px}
+    .rung{grid-template-columns:1fr;gap:4px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div class="kicker">WebNote · 运转地图 · 2026-11-10</div>
+  <h1>一次运行，从一条链接到一批待确认动作
+    <small>这是地图，不是契约。契约在 <code>skills/webnote-workflow/steps/</code> 的 frontmatter 与 <code>runs/_template/</code>；本文与它们冲突时以它们为准（测试会先红）。</small>
+  </h1>
+  <p class="lede">调度器（主会话）干确定性的事：判断类型、调工具、写清单、等用户点头。三个角色各拿一个新上下文：归类、提炼、核查。核查只信原文，不信笔记匠。</p>
+</header>
+
+<h2>一次运行的骨架 · 五步</h2>
+<div class="pipe">
+  <div class="step s-sched">
+    <div class="n">00</div>
+    <h3>采编</h3>
+    <div class="who"><span class="pill sched">调度器</span> <span class="pill">context: none</span></div>
+    <p class="note">判断类型 → 调对应工具 → 记来源路径，不复制原文。</p>
+    <div class="kv"><b>读</b> 用户给的 URL / 文件 / 剪藏<br><b>写</b> runs/&lt;run&gt;/00-采编清单.md<br><b>关键针</b> 内容清单表头 · <code>## 运行异常</code></div>
+  </div>
+  <div class="step s-iso">
+    <div class="n">01</div>
+    <h3>归类</h3>
+    <div class="who"><span class="pill iso">归类师 classifier</span> <span class="pill">isolated</span></div>
+    <p class="note">四选一：学习 / 借鉴 / 内容补充 / 可归档。只按正文语义，不看标题猜。</p>
+    <div class="kv"><b>读</b> 00 + 原文<br><b>写</b> runs/&lt;run&gt;/01-整理清单.md<br><b>禁止</b> 现抓网页、按标题推断、顺手提炼</div>
+  </div>
+  <div class="step s-iso">
+    <div class="n">02</div>
+    <h3>提炼</h3>
+    <div class="who"><span class="pill iso">笔记匠 distiller</span> <span class="pill">isolated</span></div>
+    <p class="note">每页 3~5 条要点，每条标出处与来源类型（原文 / OCR / ASR / Vision）。</p>
+    <div class="kv"><b>读</b> 01 + 原文<br><b>写</b> runs/&lt;run&gt;/02-笔记.md<br><b>禁止</b> 写正文没有的数字与结论</div>
+  </div>
+  <div class="step s-fresh">
+    <div class="n">03</div>
+    <h3>核查</h3>
+    <div class="who"><span class="pill fresh">核查官 verifier</span> <span class="pill fresh">fresh</span></div>
+    <p class="note">三态判定：已核实（直接引用）/ 已核实（转述源）/ 可疑。与笔记匠零共享上下文。</p>
+    <div class="kv"><b>读</b> 01 + 02 + 原文<br><b>写</b> runs/&lt;run&gt;/03-核查表.md<br><b>关键针</b> 三态表头 · <code>## 需用户回看的条目</code></div>
+  </div>
+  <div class="step s-sched">
+    <div class="n">04</div>
+    <h3>确认</h3>
+    <div class="who"><span class="pill sched">调度器</span> <span class="pill">context: none</span></div>
+    <p class="note">汇总成一批「待确认动作」，停住。用户逐条点头才执行。</p>
+    <div class="kv"><b>读</b> 03<br><b>写</b> runs/&lt;run&gt;/04-待确认提案.md<br><b>禁止</b> 把「建议动作」当成已执行</div>
+  </div>
+</div>
+<p class="note">五步的文件名就是顺序（<code>00-collect.md</code> … <code>04-confirm.md</code>），没有第二份顺序表。加一步 = 加一个 <code>05-*.md</code>，测试读目录。</p>
+
+<h2>三种模式 · 看工具能开几个上下文</h2>
+<table>
+  <thead><tr><th style="width:90px">模式</th><th style="width:200px">什么时候用</th><th>怎么跑</th></tr></thead>
+  <tbody>
+    <tr><td><b>A 多 Agent</b></td><td>工具支持 subagent（推荐）</td><td>主会话做 00 与 04；01 / 02 / 03 各起一个 subagent。核查必须与提炼零共享。</td></tr>
+    <tr><td><b>B 单对话框</b></td><td>开不了新会话</td><td>同对话做 00+01+02 → <b>停下</b> → 用户把产物带到新对话做 03 → 带回 04。细则：<code>skills/webnote-workflow/mode-b-single-dialog.md</code></td></tr>
+    <tr><td><b>C 无损拓存</b></td><td>防复制页 / 钉钉飞书云文档 / 登录墙长文</td><td>只拓存不摘要，走 <code>steps/branches/web-archive.md</code>；要笔记就拓存核验后再单独提炼。</td></tr>
+  </tbody>
+</table>
+
+<h2>加载阶梯 · 谁在什么时候拿到什么</h2>
+<div class="ladder">
+  <div class="rung">
+    <div class="file">AGENTS.md</div>
+    <div class="what"><b>公开入口</b>，各工具按这个名字自动加载。只写"有哪些东西、按路径怎么读、硬边界是什么"，不复述细则。私有事实（本机路径、偏好）在 <code>AGENTS.local.md</code>（gitignore），读完入口立即读它。</div>
+  </div>
+  <div class="rung">
+    <div class="file">skills/*/SKILL.md</div>
+    <div class="what"><b>只做路由</b>。<code>description</code> 决定自动触发；正文说明什么时候用哪个文件、去哪读细则。改写流程细节不放在这里。</div>
+  </div>
+  <div class="rung">
+    <div class="file">skills/webnote-workflow/steps/00-04</div>
+    <div class="what"><b>唯一的流程定义</b>。frontmatter 是契约：<code>step / executor / context / reads / writes / forbidden</code> 决定怎么跑；<code>produces / format_needles</code> 决定产出长什么样，与 <code>runs/_template/</code> 双向断言。</div>
+  </div>
+  <div class="rung">
+    <div class="file">steps/branches/</div>
+    <div class="what"><b>只在 00 命中时加载</b>的分支卡：<code>image.md</code>(1) / <code>video-audio.md</code>(2) / <code>web-archive.md</code>(3)。处理一个 PDF 不需要知道 ASR 怎么跑。</div>
+  </div>
+  <div class="rung">
+    <div class="file">tools/</div>
+    <div class="what"><b>确定性加速器</b>：提取、转写、抽帧、OCR、Vision、自检。依赖全可选，缺了只影响对应分支。</div>
+  </div>
+  <div class="rung">
+    <div class="file">bot.yaml</div>
+    <div class="what"><b>唯一机器清单</b>，只记一件约定表达不了的事：外部技能（<code>skills/browser-skill</code>）的上游仓库、完整 commit、快照日期、文件数。升版用 <code>tools/check_vendor.py --pull</code>。</div>
+  </div>
+</div>
+
+<h2>产出 → 落库 · 闸门在哪</h2>
+<div class="flow">
+  <div class="node">
+    <div class="t">运行期（本地，不进 git）</div>
+    <ul>
+      <li>runs/&lt;run&gt;/00-采编清单.md</li>
+      <li>01-整理清单.md</li>
+      <li>02-笔记.md</li>
+      <li>03-核查表.md</li>
+      <li>04-待确认提案.md</li>
+    </ul>
+  </div>
+  <div class="arrow">→</div>
+  <div class="node gate">
+    <div class="t">闸门（第四步的产出）</div>
+    <ul>
+      <li><b>三态</b>：直接引用 / 转述源 / 可疑</li>
+      <li><b>需回看条目</b>单独成节，不塞备注</li>
+      <li>转述源不可升格为"直接引用"</li>
+    </ul>
+  </div>
+  <div class="arrow">→</div>
+  <div class="node">
+    <div class="t">落库（用户点头之后）</div>
+    <ul>
+      <li>正文 → <code>&lt;知识库根&gt;/Resources/&lt;主题&gt;/&lt;来源&gt;/</code></li>
+      <li>成稿 → <code>&lt;知识库根&gt;/Knowledge/&lt;领域&gt;/</code></li>
+      <li>删除 / 归档 / 发布：一次一条确认</li>
+    </ul>
+  </div>
+</div>
+
+<h2>四道闸 · 谁在什么时候检查什么</h2>
+<div class="gates">
+  <div class="gate-c">
+    <div class="t">写代码时</div>
+    <div class="big">pre-push 钩子</div>
+    <ul>
+      <li>pytest</li>
+      <li>check_vendor（离线）</li>
+      <li>compileall</li>
+      <li>check-links</li>
+    </ul>
+  </div>
+  <div class="gate-c">
+    <div class="t">推上去之后</div>
+    <div class="big">GitHub Actions</div>
+    <ul>
+      <li>同上四项</li>
+      <li>干净克隆 + 无私有文件</li>
+      <li>约 12 秒</li>
+    </ul>
+  </div>
+  <div class="gate-c">
+    <div class="t">每次跑流程</div>
+    <div class="big">测试 22 条</div>
+    <ul>
+      <li>模板 ↔ format_needles</li>
+      <li>私有路径与旧结构不回来</li>
+      <li>文档写的路径真存在</li>
+      <li>承诺的环境变量真被读</li>
+    </ul>
+  </div>
+  <div class="gate-c">
+    <div class="t">每次升外部技能</div>
+    <div class="big">check_vendor</div>
+    <ul>
+      <li>副本是真目录、非链接</li>
+      <li>14 个文件、逐文件 blob sha</li>
+      <li>代际只记在 bot.yaml</li>
+    </ul>
+  </div>
+</div>
+
+<h2>每道切分挡住什么</h2>
+<table>
+  <thead><tr><th style="width:220px">切分</th><th style="width:340px">挡住的失败</th><th>代价</th></tr></thead>
+  <tbody>
+    <tr><td>采编 / 确认留在主会话</td><td>读完正文后再起一个新上下文做分类，只是把同一段读两遍</td><td>主会话上下文更长</td></tr>
+    <tr><td>核查官与笔记匠零共享</td><td>自证不算核查——同一份上下文里，"我写错了"和"我的判断错了"是同一个判断</td><td>多一次上下文切换</td></tr>
+    <tr><td>每条要点标来源类型</td><td>OCR 误识别的数字与 PDF 白纸黑字拿到同样可信度</td><td>多一份格式约束</td></tr>
+    <tr><td>落地动作停在确认前</td><td>删除、归档、发布、写长期记录撤不回来</td><td>多一道人工确认</td></tr>
+  </tbody>
+</table>
+
+<h2>三条铁律 · 只在一处定义</h2>
+<div class="rules">
+  <div class="rule"><b>正文不凭空编</b>文本来自工具提取或用户已有；没有就如实写"无"。</div>
+  <div class="rule"><b>核查独立</b>核查者不能是撰写者，必须全新上下文。<code>context: fresh</code>。</div>
+  <div class="rule"><b>落地必待确认</b>删除 / 归档 / 发布 / 写入长期记录，逐条点头才执行。</div>
+</div>
+<p class="note" style="margin-top:14px">定义处：<code>docs/architecture.md#三条不可逾越</code>。其余文件只写指针——过去两处各写一版，第三条一处是"不改写用户已有文件"、一处是"落地必待确认"，调度器与入口对"闸门是什么"给出的答案不同。</p>
+
+<footer>
+  <span>契约：<code>skills/webnote-workflow/steps/*.md</code> · <code>runs/_template/</code></span>
+  <span>决策与代价：<code>docs/decisions.md</code></span>
+  <span>快照日期：2026-11-10 · commit 1438435</span>
+</footer>
+
+</div>
+</body>
+</html>
