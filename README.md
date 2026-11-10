@@ -128,6 +128,5 @@ AI 出提案，你按确认键。判据：**这个动作错了，撤得回来吗
 
 ## 参考与许可
 
-- 设计参考：[Agent OS 的第一课：会分工，才会用 Agent](https://www.axtonliu.ai/newsletters/ai-2/posts/agent-os-workstation-division)（本仓只借鉴"分工隔离 / 独立核查 / 确认闸门"三层思路，文档与提示词均独立撰写）
 - 外部工具：[BrowserSkill](https://github.com/Tencent/BrowserSkill)（腾讯开源）
 - 文档与提示词采用 **MIT**，见 [LICENSE](LICENSE)

@@ -97,4 +97,4 @@ Any delete / archive / publish / long-term-memory write stops at "pending confir
 
 ## License
 
-MIT — see [LICENSE](LICENSE). Design credit: [Axton Liu, "Agent OS 的第一课"](https://www.axtonliu.ai/newsletters/ai-2/posts/agent-os-workstation-division). Vendored tool: [BrowserSkill](https://github.com/Tencent/BrowserSkill).
+MIT — see [LICENSE](LICENSE). Vendored tool: [BrowserSkill](https://github.com/Tencent/BrowserSkill).
