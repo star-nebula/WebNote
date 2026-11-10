@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 import subprocess
 import sys
@@ -518,3 +519,45 @@ def test_tool_help_works(script):
     out = (r.stdout or "") + (r.stderr or "")
     assert r.returncode == 0, f"{script.name} --help 失败：\n{out[-800:]}"
     assert "usage" in out.lower(), f"{script.name} --help 没有输出 usage"
+
+
+# ---- 提取类工具的输出契约 ----
+# 00-collect.md 规定所有提取工具在 stdout 输出同一份 JSON；这里钉住失败分支。
+EXTRACTOR_CONTRACT = {"success", "text", "char_count", "method", "error"}
+EXTRACTOR_CASES = {
+    "extract-document.py": ["/nope/missing.pdf"],
+    "extract-image-ocr.py": ["--input", "/nope/missing.png"],
+    "extract-video-asr.py": ["/nope/missing.mp4"],
+    "extract-video-frames.py": ["--input", "/nope/missing.mp4"],
+    "extract-video-text.py": ["/nope/missing.mp4"],
+    "extract-webpage.py": ["file:///nope/missing.html"],
+    "ds_vision.py": ["/nope/missing.png"],
+}
+
+
+@pytest.mark.parametrize("name", sorted(EXTRACTOR_CASES))
+def test_extractor_failure_json_contract(name):
+    """提取工具失败时也必须吐出五个键，而不是散文或空输出。
+
+    调用方（调度器）靠 success/method 决定下一步；格式一飘，采编清单的
+    「提取结果」列就写不出可判读的东西。
+    """
+    r = subprocess.run(
+        [sys.executable, str(ROOT / "tools" / name), *EXTRACTOR_CASES[name]],
+        cwd=ROOT, capture_output=True, encoding="utf-8", errors="replace", timeout=120,
+    )
+    lines = [ln for ln in (r.stdout or "").splitlines() if ln.lstrip().startswith("{")]
+    assert lines, f"{name} 失败时没有输出 JSON：{(r.stdout or '')[-400:]}{(r.stderr or '')[-400:]}"
+    payload = json.loads(lines[-1])
+    assert set(payload) == EXTRACTOR_CONTRACT, f"{name} 输出的键不对：{sorted(payload)}"
+    assert payload["success"] is False, f"{name} 对不存在的输入应报 success=false"
+    assert payload["method"] == "error", f"{name} 失败时 method 应为 error"
+    assert isinstance(payload["char_count"], int) and payload["char_count"] == 0
+    assert isinstance(payload["error"], str) and payload["error"], f"{name} 失败时必须给出原因"
+
+
+def test_every_extractor_is_covered_by_contract():
+    """新增提取工具必须同时补上契约用例，否则这条断言形同虚设。"""
+    on_disk = {p.name for p in (ROOT / "tools").glob("extract-*.py")} | {"ds_vision.py"}
+    missing = on_disk - set(EXTRACTOR_CASES)
+    assert not missing, f"这些工具没有输出契约用例：{sorted(missing)}"

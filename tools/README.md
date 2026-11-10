@@ -8,7 +8,7 @@
 
 1. **能导入**——`runpy.run_path(path, run_name='probe')` 不报错（顶层 import 不许死、模块级不许抛）
 2. **`--help` 能跑**——有 `argparse` 的必须支持，且输出含 `usage`（参数冲突、`dest` 拼错只在解析时炸）
-3. **输出 JSON 五个键**——见下
+3. **输出 JSON 五个键**——见下；失败分支也一样（`tests/test_repo.py` 对 7 个提取工具逐个断言，新增工具要在 `EXTRACTOR_CASES` 里补一行，否则测试直接红）
 
 ## 输出格式（所有工具通用）
 
