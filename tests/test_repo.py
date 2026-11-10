@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 import sys
@@ -535,16 +536,27 @@ EXTRACTOR_CASES = {
 }
 
 
+# 走浏览器（bsk）的工具在"bsk 已装但 daemon 起不来"的机器上会挂住几十秒。
+# 契约测的是失败分支，把外部可执行文件从 PATH 里摘掉反而是最具决定性的一种失败。
+NO_EXTERNAL_BIN = {"extract-webpage.py", "extract-video-text.py"}
+
+
 @pytest.mark.parametrize("name", sorted(EXTRACTOR_CASES))
-def test_extractor_failure_json_contract(name):
+def test_extractor_failure_json_contract(name, tmp_path):
     """提取工具失败时也必须吐出五个键，而不是散文或空输出。
 
     调用方（调度器）靠 success/method 决定下一步；格式一飘，采编清单的
     「提取结果」列就写不出可判读的东西。
     """
+    env = None
+    if name in NO_EXTERNAL_BIN:
+        empty_bin = tmp_path / "empty-bin"
+        empty_bin.mkdir()
+        env = {**os.environ, "PATH": str(empty_bin)}
     r = subprocess.run(
         [sys.executable, str(ROOT / "tools" / name), *EXTRACTOR_CASES[name]],
         cwd=ROOT, capture_output=True, encoding="utf-8", errors="replace", timeout=120,
+        env=env,
     )
     lines = [ln for ln in (r.stdout or "").splitlines() if ln.lstrip().startswith("{")]
     assert lines, f"{name} 失败时没有输出 JSON：{(r.stdout or '')[-400:]}{(r.stderr or '')[-400:]}"
@@ -561,3 +573,21 @@ def test_every_extractor_is_covered_by_contract():
     on_disk = {p.name for p in (ROOT / "tools").glob("extract-*.py")} | {"ds_vision.py"}
     missing = on_disk - set(EXTRACTOR_CASES)
     assert not missing, f"这些工具没有输出契约用例：{sorted(missing)}"
+
+
+def test_core_task_and_boundaries_are_stated():
+    """入口里必须有"不做什么"——否则每个新需求都会被当成该做。"""
+    entry = read(ROOT / "AGENTS.md")
+    for kw in ("这个 bot 的任务", "转存", "可核查", "它不负责"):
+        assert kw in entry, f"AGENTS.md 缺核心任务段的关键词：{kw}"
+    assert "对\"内容说了什么\"负责" in entry or "对“内容说了什么”负责" in entry, \
+        "AGENTS.md 缺那句一句话定位"
+
+
+def test_collect_dedupes_before_extracting():
+    """采编第一步是查重，不是提取。同一链接进两次会产出两份互相矛盾的笔记。"""
+    collect = read(ROOT / STEPS_DIR / "00-collect.md")
+    assert "先查重" in collect, "00-collect.md 缺查重步骤"
+    for kw in ("重采", "跳过", "只更新"):
+        assert kw in collect, f"查重命中后的三个选项缺 {kw}"
+    assert "已采过：" in collect, "00-collect.md 必须要求在清单里留「已采过」痕迹"
