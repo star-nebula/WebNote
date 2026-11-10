@@ -1,3 +1,5 @@
 # 外部技能的副本必须与上游逐字节一致，否则 tools/check_vendor.py --online
 # 比 blob sha 会误报「落后」。关掉行尾转换，让 git 原样存、原样取。
 skills/browser-skill/** -text
+# 钩子是 sh 脚本，CRLF 会让它直接报错退出
+.githooks/* text eol=lf

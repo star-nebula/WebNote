@@ -2,6 +2,8 @@
 
 > Turns "collect → classify → distill → verify → confirm" into **a scheduler (main session) + three independent agents**. Deterministic work stays with the scheduler; only what truly needs independent judgment goes to a subagent.
 
+[![CI](https://github.com/star-nebula/WebNote/actions/workflows/ci.yml/badge.svg)](https://github.com/star-nebula/WebNote/actions/workflows/ci.yml)
+
 [中文](README.md) · [AI entry](AGENTS.public.md) · [Architecture](docs/architecture.md)
 
 ## What this is

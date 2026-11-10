@@ -1,0 +1,59 @@
+#!/bin/sh
+# push 前跑一遍 CI 的检查（离线、约 3 秒）。任一失败就拦住这次 push。
+#
+# 装一次（每个克隆各一次）：
+#   git config core.hooksPath .githooks
+#
+# 临时跳过：git push --no-verify
+# 不在这里做联网检查（--online / --pull），那会让 push 变慢且结果不可靠。
+
+root=$(git rev-parse --show-toplevel) || exit 0
+cd "$root" || exit 0
+
+# 找一个能 import pytest 的解释器（Windows 上可能是 py，WSL/Linux 是 python3）
+pick() {
+    for c in "$@"; do
+        if command -v "$c" >/dev/null 2>&1 && "$c" -c 'import pytest' >/dev/null 2>&1; then
+            echo "$c"
+            return 0
+        fi
+    done
+    # 退而求其次：任意能跑脚本的解释器（只用标准库的两条检查还能跑）
+    for c in "$@"; do
+        if command -v "$c" >/dev/null 2>&1; then
+            echo "$c"
+            return 0
+        fi
+    done
+    return 1
+}
+
+py=$(pick py python3 python) || {
+    echo "pre-push: 没有可用的 python，跳过本地检查" >&2
+    exit 0
+}
+
+run() {
+    label="$1"
+    shift
+    printf '  %-14s' "$label"
+    if out=$("$@" 2>&1); then
+        echo "OK"
+    else
+        echo "FAILED"
+        echo "$out" | tail -30 | sed 's/^/      /'
+        echo "" >&2
+        echo "pre-push: $label 没过，已拦住这次 push（修好再推，或 git push --no-verify 强推）" >&2
+        exit 1
+    fi
+}
+
+echo "pre-push: 本地检查（python: $py）"
+if "$py" -c 'import pytest' >/dev/null 2>&1; then
+    run "仓库不变量" "$py" -m pytest tests -q
+else
+    echo "  仓库不变量    SKIPPED（$py 没有 pytest：pip install -r requirements-dev.txt）"
+fi
+run "外部技能" "$py" tools/check_vendor.py
+run "链接" "$py" tools/check-links.py
+echo "pre-push: 通过"
