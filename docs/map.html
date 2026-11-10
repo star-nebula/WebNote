@@ -37,7 +37,7 @@
   .pill.iso{color:var(--iso);border-color:color-mix(in srgb,var(--iso) 45%,transparent)}
   .pill.fresh{color:var(--fresh);border-color:color-mix(in srgb,var(--fresh) 50%,transparent)}
 
-  /* 五步流水线 */
+  /* 四步流水线 */
   .pipe{display:grid;grid-template-columns:repeat(5,1fr);gap:0;margin:0 0 8px}
   .step{position:relative;background:var(--card);border:1px solid var(--line);
         border-radius:12px;padding:16px 15px 14px;margin-right:26px;box-shadow:0 1px 0 rgba(0,0,0,.02);
@@ -124,55 +124,48 @@
   <h1>一次运行，从一条链接到一批待确认动作
     <small>这是地图，不是契约。契约在 <code>skills/webnote-workflow/steps/</code> 的 frontmatter 与 <code>runs/_template/</code>；本文与它们冲突时以它们为准（测试会先红）。</small>
   </h1>
-  <p class="lede">调度器（主会话）干确定性的事：判断类型、调工具、写清单、等用户点头。三个角色各拿一个新上下文：归类、提炼、核查。核查只信原文，不信笔记匠。</p>
+  <p class="lede">调度器（主会话）干确定性的事：判断类型、调工具、写清单、等用户点头。两个角色各拿一个新上下文：提炼、核查。核查只信原文，不信笔记匠。</p>
 </header>
 
-<h2>一次运行的骨架 · 五步</h2>
+<h2>一次运行的骨架 · 四步</h2>
 <div class="pipe">
   <div class="step s-sched">
     <div class="n">00</div>
     <h3>采编</h3>
     <div class="who"><span class="pill sched">调度器</span> <span class="pill">context: none</span></div>
     <p class="note">判断类型 → 调对应工具 → 记来源路径，不复制原文。</p>
-    <div class="kv"><b>读</b> 用户给的 URL / 文件 / 剪藏<br><b>写</b> runs/&lt;run&gt;/00-采编清单.md<br><b>关键针</b> 内容清单表头 · <code>## 运行异常</code></div>
+    <div class="kv"><b>读</b> 用户给的 URL / 文件 / 剪藏<br><b>写</b> runs/&lt;run&gt;/00-采编清单.md<br><b>关键针</b> 内容清单表头 · <code>## 有正文统计</code> · <code>## 运行异常</code></div>
   </div>
   <div class="step s-iso">
     <div class="n">01</div>
-    <h3>归类</h3>
-    <div class="who"><span class="pill iso">归类师 classifier</span> <span class="pill">isolated</span></div>
-    <p class="note">四选一：学习 / 借鉴 / 内容补充 / 可归档。只按正文语义，不看标题猜。</p>
-    <div class="kv"><b>读</b> 00 + 原文<br><b>写</b> runs/&lt;run&gt;/01-整理清单.md<br><b>禁止</b> 现抓网页、按标题推断、顺手提炼</div>
-  </div>
-  <div class="step s-iso">
-    <div class="n">02</div>
     <h3>提炼</h3>
     <div class="who"><span class="pill iso">笔记匠 distiller</span> <span class="pill">isolated</span></div>
-    <p class="note">每页 3~5 条要点，每条标出处与来源类型（原文 / OCR / ASR / Vision）。</p>
-    <div class="kv"><b>读</b> 01 + 原文<br><b>写</b> runs/&lt;run&gt;/02-笔记.md<br><b>禁止</b> 写正文没有的数字与结论</div>
+    <p class="note">每页最多 5 条要点，宁少勿凑；每条标出处与来源类型（原文 / OCR / ASR / Vision）。</p>
+    <div class="kv"><b>读</b> 00 + 原文<br><b>写</b> runs/&lt;run&gt;/01-笔记.md<br><b>禁止</b> 写正文没有的数字与结论</div>
   </div>
   <div class="step s-fresh">
-    <div class="n">03</div>
+    <div class="n">02</div>
     <h3>核查</h3>
     <div class="who"><span class="pill fresh">核查官 verifier</span> <span class="pill fresh">fresh</span></div>
     <p class="note">三态判定：已核实（直接引用）/ 已核实（转述源）/ 可疑。与笔记匠零共享上下文。</p>
-    <div class="kv"><b>读</b> 01 + 02 + 原文<br><b>写</b> runs/&lt;run&gt;/03-核查表.md<br><b>关键针</b> 三态表头 · <code>## 需用户回看的条目</code></div>
+    <div class="kv"><b>读</b> 01 + 原文<br><b>写</b> runs/&lt;run&gt;/02-核查表.md<br><b>关键针</b> 三态表头 · <code>## 需用户回看的条目</code></div>
   </div>
   <div class="step s-sched">
-    <div class="n">04</div>
+    <div class="n">03</div>
     <h3>确认</h3>
     <div class="who"><span class="pill sched">调度器</span> <span class="pill">context: none</span></div>
-    <p class="note">汇总成一批「待确认动作」，停住。用户逐条点头才执行。</p>
-    <div class="kv"><b>读</b> 03<br><b>写</b> runs/&lt;run&gt;/04-待确认提案.md<br><b>禁止</b> 把「建议动作」当成已执行</div>
+    <p class="note">按<b>你自己的分类体系</b>给去向（没有体系才用兜底四类），汇总成一批「待确认动作」，停住。</p>
+    <div class="kv"><b>读</b> 01 + 02<br><b>写</b> runs/&lt;run&gt;/03-待确认提案.md<br><b>禁止</b> 把「建议动作」当成已执行<br><b>可疑条目</b> 回修 ≤2 次，不许新增条目</div>
   </div>
 </div>
-<p class="note">五步的文件名就是顺序（<code>00-collect.md</code> … <code>04-confirm.md</code>），没有第二份顺序表。加一步 = 加一个 <code>05-*.md</code>，测试读目录。</p>
+<p class="note">四步的文件名就是顺序（<code>00-collect.md</code> … <code>03-confirm.md</code>），没有第二份顺序表。加一步 = 加一个 <code>04-*.md</code>，测试读目录。</p>
 
 <h2>三种模式 · 看工具能开几个上下文</h2>
 <table>
   <thead><tr><th style="width:90px">模式</th><th style="width:200px">什么时候用</th><th>怎么跑</th></tr></thead>
   <tbody>
-    <tr><td><b>A 多 Agent</b></td><td>工具支持 subagent（推荐）</td><td>主会话做 00 与 04；01 / 02 / 03 各起一个 subagent。核查必须与提炼零共享。</td></tr>
-    <tr><td><b>B 单对话框</b></td><td>开不了新会话</td><td>同对话做 00+01+02 → <b>停下</b> → 用户把产物带到新对话做 03 → 带回 04。细则：<code>skills/webnote-workflow/mode-b-single-dialog.md</code></td></tr>
+    <tr><td><b>A 多 Agent</b></td><td>工具支持 subagent（推荐）</td><td>主会话做 00 与 03；01 / 02 各起一个 subagent。核查必须与提炼零共享。</td></tr>
+    <tr><td><b>B 单对话框</b></td><td>开不了新会话</td><td>同对话做 00+01 → <b>停下</b> → 用户把产物带到新对话做 02 → 带回 03。细则：<code>skills/webnote-workflow/mode-b-single-dialog.md</code></td></tr>
     <tr><td><b>C 无损拓存</b></td><td>防复制页 / 钉钉飞书云文档 / 登录墙长文</td><td>只拓存不摘要，走 <code>steps/branches/web-archive.md</code>；要笔记就拓存核验后再单独提炼。</td></tr>
   </tbody>
 </table>
@@ -211,10 +204,9 @@
     <div class="t">运行期（本地，不进 git）</div>
     <ul>
       <li>runs/&lt;run&gt;/00-采编清单.md</li>
-      <li>01-整理清单.md</li>
-      <li>02-笔记.md</li>
-      <li>03-核查表.md</li>
-      <li>04-待确认提案.md</li>
+      <li>01-笔记.md</li>
+      <li>02-核查表.md</li>
+      <li>03-待确认提案.md</li>
     </ul>
   </div>
   <div class="arrow">→</div>

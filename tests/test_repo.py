@@ -86,7 +86,7 @@ def test_steps_are_the_only_pipeline():
     """流水线的唯一定义在 steps/：文件名即顺序，编号连续，没有第二份顺序表。"""
     files = step_files()
     names = [p.name for p in files]
-    expected = ["00-collect.md", "01-classify.md", "02-distil.md", "03-verify.md", "04-confirm.md"]
+    expected = ["00-collect.md", "01-distil.md", "02-verify.md", "03-confirm.md"]
     assert names == expected, f"步骤文件应恰好是 {expected}，实际 {names}"
 
     for i, p in enumerate(files, 1):
@@ -209,6 +209,30 @@ def test_role_names_have_one_wording():
     assert not missing, "AGENTS.md 里的角色名与步骤文件不一致：\n" + "\n".join(missing)
 
 
+def test_taxonomy_is_user_owned():
+    """分类类目归用户，不归本仓。
+
+    每个用户对网页内容的分类体系都不同。曾经有一个独立的「归类师」步骤，
+    强制四选一（学习/借鉴/内容补充/可归档）——用户有自己的体系时它要么打架、
+    要么被忽略，而它的产出没有任何下游消费者。现在只在 03-confirm 里做去向建议，
+    且必须优先用用户自己的体系；四类只做兜底。
+    """
+    fallback = ["学习", "借鉴", "内容补充", "可归档"]
+    offenders = []
+    for p in step_files():
+        text = read(p)
+        if p.name == "03-confirm.md":
+            continue
+        hit = [w for w in fallback if f"| {w} |" in text or f"**{w}**" in text]
+        if hit:
+            offenders.append(f"{p.name}: {hit}")
+    assert not offenders, "分类类目只该作为兜底出现在 03-confirm.md：\n" + "\n".join(offenders)
+
+    confirm = read(ROOT / STEPS_DIR / "03-confirm.md")
+    assert "AGENTS.local.md" in confirm, "03-confirm.md 必须先读用户的分类体系（AGENTS.local.md）"
+    assert "兜底" in confirm, "03-confirm.md 必须写明兜底条件"
+
+
 def test_vendored_skill_is_a_real_copy():
     """外部技能必须是真副本：真目录、无链接、只此一份，不经本地中转。"""
     vendored = ROOT / "skills/browser-skill"
@@ -242,7 +266,7 @@ def test_steps_declare_boundaries():
 
     曾经只有 01–03 有 reads/forbidden，00 与 04 空着——契约表看着齐，实际缺一半。
     """
-    never = ["00-collect.md", "01-classify.md", "02-distil.md", "03-verify.md", "04-confirm.md"]
+    never = ["00-collect.md", "01-distil.md", "02-verify.md", "03-confirm.md"]
     problems = []
     for name in never:
         fm = frontmatter(ROOT / STEPS_DIR / name)
@@ -376,3 +400,34 @@ def test_documented_env_keys_are_read():
     code = "\n".join(read(p) for p in tracked_files() if p.suffix in {".py", ".ps1"})
     missing = sorted(k for k in keys if k not in code)
     assert not missing, f"README 承诺这些环境变量有效，但没有代码读取：{missing}"
+
+
+def test_body_threshold_is_owned_by_the_step():
+    """「有正文」的判据必须写在 00-collect 里，不能只活在口头。
+
+    它曾经写在别处，删那一步时一起丢了，于是写这一列的人临场定、读这一列的人当事实。
+    """
+    collect = read(ROOT / STEPS_DIR / "00-collect.md")
+    assert "有（疑截断）" in collect, "00-collect.md 必须定义「有（疑截断）」这一档"
+    assert "200" in collect and "50" in collect, "00-collect.md 必须给出两档阈值"
+    for name in ("01-distil.md", "02-verify.md"):
+        assert "疑截断" in read(ROOT / STEPS_DIR / name), f"{name} 没接住「有（疑截断）」这条规则"
+
+
+def test_value_signal_reaches_confirmation():
+    """笔记匠给的价值信号（修订建议）必须在确认步被使用。
+
+    核查只管真假；没有这条线，确认步只能按真假分堆，"根本不值得留"无法表达。
+    """
+    confirm = read(ROOT / STEPS_DIR / "03-confirm.md")
+    assert "修订建议" in confirm, "03-confirm.md 没有使用 01-笔记 的修订建议"
+    assert "可忽略" in confirm, "03-confirm.md 必须写明「可忽略 → 不落库」"
+
+
+def test_rework_path_is_defined():
+    """可疑条目要有回修路径，否则三态判定止于贴标签。"""
+    distil = read(ROOT / STEPS_DIR / "01-distil.md")
+    confirm = read(ROOT / STEPS_DIR / "03-confirm.md")
+    assert "回修" in distil, "01-distil.md 缺「回修模式」"
+    assert "不许新增条目" in distil, "回修必须禁止新增条目（新增等于绕过核查）"
+    assert "最多回修两次" in confirm, "03-confirm.md 必须写明回修次数上限"

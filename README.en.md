@@ -1,6 +1,6 @@
 # WebNote · Web-to-Note Workflow
 
-> Turns "collect → classify → distill → verify → confirm" into **a scheduler (main session) + three independent agents**. Deterministic work stays with the scheduler; only what truly needs independent judgment goes to a subagent.
+> Turns "collect → distill → verify → confirm" into **a scheduler (main session) + two independent agents**. Deterministic work stays with the scheduler; only what truly needs independent judgment goes to a subagent.
 
 [![CI](https://github.com/star-nebula/WebNote/actions/workflows/ci.yml/badge.svg)](https://github.com/star-nebula/WebNote/actions/workflows/ci.yml)
 
@@ -103,11 +103,11 @@ WebNote/
 
 | Mode | When | Split |
 |---|---|---|
-| **A Multi-agent** | Tool supports subagents (recommended) | Scheduler does collection + confirmation; three subagents classify / distill / verify; the verifier shares zero context with the distiller |
-| **B Single-dialog** | Tool can't open a new session | Collect + classify + distill in one dialog → **stop** → verify in a new conversation → confirm |
+| **A Multi-agent** | Tool supports subagents (recommended) | Scheduler does collection + confirmation; two subagents distill and verify; the verifier shares zero context with the distiller |
+| **B Single-dialog** | Tool can't open a new session | Collect + distill in one dialog → **stop** → verify in a new conversation → confirm |
 | **C Lossless archive** | Copy-protected, cloud docs, login-walled pages | Archive only, no summarizing; distill separately afterwards |
 
-Verification is the safety gate: **an agent cannot audit itself.** If a fresh context is impossible, declare the degradation explicitly as `steps/03-verify.md` requires — an unmarked degradation is a compliant-looking table hiding a real risk.
+Verification is the safety gate: **an agent cannot audit itself.** If a fresh context is impossible, declare the degradation explicitly as `steps/02-verify.md` requires — an unmarked degradation is a compliant-looking table hiding a real risk.
 
 ## Confirmation boundary
 

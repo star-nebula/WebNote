@@ -9,15 +9,16 @@
 
 ## 本项目提供什么（任何工具通用）
 
-**流水线**——五步的定义全在 `skills/webnote-workflow/steps/`，**文件名就是顺序**：
+**流水线**——四步的定义全在 `skills/webnote-workflow/steps/`，**文件名就是顺序**：
 
 | 步 | 文件 | 角色 | 可写 | 上下文 |
 |---|---|---|---|---|
 | 1 采编 | `steps/00-collect.md` | 调度器自己 | `runs/*/00-采编清单.md` | 主会话 |
-| 2 归类 | `steps/01-classify.md` | 归类师（`classifier`） | `runs/*/01-整理清单.md` | `isolated`（建议独立） |
-| 3 提炼 | `steps/02-distil.md` | 笔记匠（`distiller`） | `runs/*/02-笔记.md` | `isolated`（建议独立） |
-| 4 核查 | `steps/03-verify.md` | 核查官（`verifier`） | `runs/*/03-核查表.md` | `fresh`（必须全新） |
-| 5 确认 | `steps/04-confirm.md` | 调度器自己 | `runs/*/04-待确认提案.md` | 主会话 |
+| 2 提炼 | `steps/01-distil.md` | 笔记匠（`distiller`） | `runs/*/01-笔记.md` | `isolated`（建议独立） |
+| 3 核查 | `steps/02-verify.md` | 核查官（`verifier`） | `runs/*/02-核查表.md` | `fresh`（必须全新） |
+| 4 确认 | `steps/03-confirm.md` | 调度器自己 | `runs/*/03-待确认提案.md` | 主会话 |
+
+**分类不是本仓定的**：每个用户对网页内容的类目体系都不同，所以没有固定的「分类步骤」。去向在 `steps/03-confirm.md` 里决定，顺序是：用户 `AGENTS.local.md` 的「分类体系」段 → 知识库现有目录名 → 两者都没有才用兜底四类（学习 / 借鉴 / 内容补充 / 可归档）。
 
 文件路径相对 `skills/webnote-workflow/`；`reads` / `writes` / `produces` 里的路径相对仓库根。frontmatter 是契约：`step` / `executor` / `context` / `reads` / `writes` / `forbidden` 决定怎么跑（`reads` 允许写自然语言约束），`produces` / `format_needles` 供 `runs/_template/` 逐条比对。
 
@@ -37,7 +38,7 @@
 **怎么用（不依赖任何工具的注册表）：**
 
 1. 需要某个角色时，读它的定义文件，按契约执行。你的工具不支持子 agent，就自己扮演，**一次只扮一个**。
-2. `context: fresh` 的步骤必须在不携带上文的情况下执行（新会话，或明确声明「以下判断不参考我此前的结论」）。做不到就按 `steps/03-verify.md` 的降级声明**显式标注**。
+2. `context: fresh` 的步骤必须在不携带上文的情况下执行（新会话，或明确声明「以下判断不参考我此前的结论」）。做不到就按 `steps/02-verify.md` 的降级声明**显式标注**。
 3. 表里的「可写」是硬边界：越界的一律不写，把内容作为回复交回主 agent。
 
 > 这套结构只依赖一件事：**能读文件就够**。工具支持 skill / subagent 注册时可以更省事，但不注册不影响流程成立——注册只是把"靠遵守"变成"靠机制"。
@@ -74,7 +75,7 @@
 
 1. **技能优先，不凭记忆简化。** 这类任务开头加载 `webnote-workflow`；视频/音频另加 `video-extract`；防复制页、钉钉/飞书云文档、登录墙、懒加载长文另加 `web-archive` + `steps/branches/web-archive.md`。不要因为"看起来简单"跳过技能里的步骤。
 2. **范围**：只做内容提取与笔记整理；无关的开发/运维工作不在本角色内，除非用户明确要求。
-3. **核查独立**：核查者必须是全新上下文，且不是笔记撰写者。做不到就按 `steps/03-verify.md` 的降级声明**显式标注**，不要用一份看起来合规的表掩盖。
+3. **核查独立**：核查者必须是全新上下文，且不是笔记撰写者。做不到就按 `steps/02-verify.md` 的降级声明**显式标注**，不要用一份看起来合规的表掩盖。
 4. **三条铁律见 [`docs/architecture.md`](docs/architecture.md#三条不可逾越)**（正文不凭空编 / 核查独立 / 落地必待确认）——此处不重写。原始输入只读，命名冲突用来源或日期后缀，另起一份。
 5. **凭据只查可用性，不读不写不报值。**
 6. **不绕过付费墙与登录墙**：只处理用户已授权的页面；不做反爬对抗。失败就说失败，不补写。
