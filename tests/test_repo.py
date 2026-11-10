@@ -274,7 +274,8 @@ def test_steps_declare_boundaries():
             if not fm.get(key):
                 problems.append(f"{name} 缺 {key}")
         for item in fm.get("reads") or []:
-            item = str(item)
+            # reads 允许带括注说明用途（如「仅回修模式」），校验时去掉
+            item = re.sub(r"（[^）]*）$", "", str(item)).strip()
             if item.startswith(("skills/", "docs/", "tools/")):
                 if not (ROOT / item).exists():
                     problems.append(f"{name} 的 reads 指向不存在的路径：{item}")
@@ -466,3 +467,54 @@ def test_run_archive_dir_is_tracked():
         cwd=ROOT, capture_output=True, text=True,
     )
     assert tracked.returncode == 0, "runs/_archive/.gitkeep 未被 git 跟踪"
+
+
+def test_entry_ids_have_one_format():
+    """条目号必须是 p<页>-<序>，全链一套。
+
+    曾经三态表用「1. 摘要」、回看表用「p06-1」，而回修规则要求引用「条目号」——
+    两套编号并存，锚点指向不明，且摘要一改锚点就断。
+    """
+    verify = read(ROOT / STEPS_DIR / "02-verify.md")
+    confirm = read(ROOT / STEPS_DIR / "03-confirm.md")
+    template = read(ROOT / TEMPLATE_DIR / "02-核查表.md")
+    assert "p<页>-<序>" in verify, "02-verify.md 必须写出条目号规则"
+    assert "p<页>-<序>" in confirm, "03-confirm.md 必须声明沿用核查表的条目号"
+    assert "p01-1" in template, "02-核查表 模板的条目列必须用 p01-1 这种 ID"
+    assert "| 1. <要点摘要>" not in template, "模板里不该再出现「1. 摘要」这种编号"
+
+
+def tool_scripts():
+    return sorted(p for p in (ROOT / "tools").glob("*.py"))
+
+
+@pytest.mark.parametrize("script", tool_scripts(), ids=lambda p: p.name)
+def test_tool_imports_cleanly(script):
+    """每个工具都必须能被导入（不执行 main）。
+
+    compileall 只证明语法对；顶层 import 死了、模块级代码抛错，它全放行。
+    """
+    code = "import runpy, sys; runpy.run_path(sys.argv[1], run_name='probe')"
+    r = subprocess.run(
+        [sys.executable, "-c", code, str(script)],
+        cwd=ROOT, capture_output=True, text=True,
+    )
+    assert r.returncode == 0, f"{script.name} 导入失败：\n{r.stderr[-800:]}"
+
+
+@pytest.mark.parametrize("script", tool_scripts(), ids=lambda p: p.name)
+def test_tool_help_works(script):
+    """有 argparse 的工具，--help 必须正常退出。
+
+    argparse 的定义错误（参数冲突、dest 拼错）只在解析时才炸，编译期看不出来。
+    """
+    if "add_argument" not in script.read_text(encoding="utf-8"):
+        pytest.skip("该脚本用手工解析 argv，没有 argparse")
+    # Windows 控制台默认 GBK：用 utf-8 + replace 读，否则管道解码炸掉、stdout 变 None
+    r = subprocess.run(
+        [sys.executable, str(script), "--help"],
+        cwd=ROOT, capture_output=True, encoding="utf-8", errors="replace", timeout=60,
+    )
+    out = (r.stdout or "") + (r.stderr or "")
+    assert r.returncode == 0, f"{script.name} --help 失败：\n{out[-800:]}"
+    assert "usage" in out.lower(), f"{script.name} --help 没有输出 usage"
