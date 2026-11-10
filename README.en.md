@@ -77,7 +77,6 @@ WebNote/
 ├── tools/                # collection accelerators + self-checks (all deps optional)
 ├── tests/                # repo invariants (CI) · tests/manual/ needs a real browser
 ├── docs/                 # architecture · decisions · versions/ · history/ (obsolete, don't copy)
-├── memory/               # long-term memory (local only, gitignored)
 └── .env.example          # env var names only
 ```
 

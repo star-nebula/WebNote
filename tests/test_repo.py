@@ -245,13 +245,15 @@ def test_vendored_references_all_reachable(name):
     assert refs <= linked, f"SKILL.md 没有引用到：{sorted(refs - linked)}"
 
 
-def test_memory_stays_private():
-    """长期记忆只在本机：/memory/ 必须被 gitignore，且不得有任何文件被跟踪。"""
-    probe = ROOT / "memory" / "MEMORY.md"
-    if probe.exists():
-        r = subprocess.run(["git", "check-ignore", "-q", str(probe)], cwd=ROOT)
-        assert r.returncode == 0, "memory/ 必须被 .gitignore 忽略（仓库是公开的）"
+def test_private_files_stay_untracked():
+    """私有块与头像只在本机：AGENTS.md 与 persona/ 不能被跟踪。"""
+    for rel in ("AGENTS.md", "persona/avatar.png"):
+        path = ROOT / rel
+        if not path.exists():
+            continue
+        r = subprocess.run(["git", "check-ignore", "-q", rel], cwd=ROOT)
+        assert r.returncode == 0, f"{rel} 必须被 .gitignore 忽略（仓库是公开的）"
     tracked = subprocess.run(
-        ["git", "ls-files", "memory"], cwd=ROOT, capture_output=True, text=True
+        ["git", "ls-files", "AGENTS.md", "persona"], cwd=ROOT, capture_output=True, text=True
     ).stdout.strip()
-    assert not tracked, f"memory/ 下不应有被跟踪文件：{tracked}"
+    assert not tracked, f"私有内容不应进 git：{tracked}"

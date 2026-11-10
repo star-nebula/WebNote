@@ -90,7 +90,6 @@ WebNote/
 │   ├── decisions.md      # 决策记录
 │   ├── versions/         # 已发表旧版（正文原样）
 │   └── history/          # 历史存档：格式已废弃，只用来解释规则来由
-├── memory/               # 长期记忆（本地私有，不进 git）
 └── .env.example          # 环境变量键名（真值放 .env）
 ```
 

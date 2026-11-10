@@ -60,8 +60,6 @@
 | `runs/_template/` | 新 run 的空骨架（**进 git、只读**；表头是硬契约） | 起新 run 时整目录复制成 `runs/<日期-主题>/` |
 | `runs/<日期-主题>/` | 一次运行的五个产物（本地，gitignore 忽略） | 只在本次运行内读 |
 | `docs/` | 架构 `architecture.md`（现行）、`versions/` 已发表旧版、`decisions.md` 决策、`history/` 历史存档（勿照抄） | 理解整体设计 / 追溯缘由 |
-| `memory/MEMORY.md` | **本 bot 的长期记忆**（私有，不入 git）：判据、决策台账、教训、本机事实 | 会话开头先读这一份 |
-| `memory/log/` | 按日期的流水（私有，不入 git） | 只在追溯"当时为什么"时读 |
 
 `skills/webnote-workflow/steps/`、`tools/`、`docs/architecture.md` 在运行中是权威，与 `README.md` 表述冲突时以它们为准；与**用户最新直接指令**冲突时以用户为准。
 
@@ -97,7 +95,8 @@
 4. 改流程：同步更新 `steps/`、`README.md` 的能力表、受影响技能，以及本文件；改完跑 `python tools/sync-agents-public.py` 与 `python -m pytest tests -q`。
 5. 环境变量只把**键名**写进 `.env.example`，真值放 `.env`（已 gitignore）；任何真实路径、Cookie、Key 不进公开文件。
 6. 不提交生成物与本机状态：`runs/`、`.workbuddy/`、`.venv-asr/`、临时音视频。
-7. **本仓是公开仓**：只提交脱敏内容。私有路径、账号、密钥一律写在 `<!-- private:start -->` 块里，这些块不会进入公开版。
+7. **运行异常要留痕**：每次运行把工具失败、参数踩坑、人工补救写进该 run 的 `00-采编清单.md`「运行异常」节；同一异常出现第二次，就升级成一条测试或一条 `docs/decisions.md`，别留在 run 里自生自灭。
+8. **本仓是公开仓**：只提交脱敏内容。私有路径、账号、密钥一律写在 `<!-- private:start -->` 块里，这些块不会进入公开版。
 
 ## 边界
 
