@@ -245,6 +245,12 @@ def test_entry_is_public_and_overlay_stays_private():
     if overlay.exists():
         r = subprocess.run(["git", "check-ignore", "-q", "AGENTS.local.md"], cwd=ROOT)
         assert r.returncode == 0, "AGENTS.local.md 必须被 .gitignore 忽略"
+    # 叠加层只放私有内容：不许与入口出现同名「## 」小节（那是第二份契约的起点）
+    if overlay.exists():
+        headings = lambda t: {ln.strip() for ln in t.splitlines() if ln.startswith("## ")}
+        clash = headings(read(ROOT / "AGENTS.md")) & headings(read(overlay))
+        assert not clash, f"AGENTS.local.md 不该复述入口的小节：{sorted(clash)}"
+
     persona = subprocess.run(
         ["git", "ls-files", "persona"], cwd=ROOT, capture_output=True, text=True
     ).stdout.strip()
