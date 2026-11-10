@@ -4,7 +4,7 @@
 
 [![CI](https://github.com/star-nebula/WebNote/actions/workflows/ci.yml/badge.svg)](https://github.com/star-nebula/WebNote/actions/workflows/ci.yml)
 
-[中文](README.md) · [AI entry](AGENTS.public.md) · [Architecture](docs/architecture.md)
+[中文](README.md) · [AI entry](AGENTS.md) · [Architecture](docs/architecture.md)
 
 ## What this is
 
@@ -33,7 +33,7 @@ Not sure what your machine can do: `python tools/check-env.py` (standard library
 | Path | For | How |
 |---|---|---|
 | **A Install the skill** | Tools with project-level skills | Link `<repo>/skills/` into the tool's skills dir; conversation triggers it naturally afterwards |
-| **B One prompt** | Any AI | Hand [`AGENTS.public.md`](AGENTS.public.md) over together with your content |
+| **B One prompt** | Any AI | Hand [`AGENTS.md`](AGENTS.md) over together with your content |
 | **C Manual** | Step-by-step control | Walk [`steps/`](skills/webnote-workflow/steps/), loading `00`–`04` in filename order |
 
 No subagent support (ChatGPT / Claude web): use Mode B, the three-part prompt in [`degraded-single-dialog.md`](skills/webnote-workflow/references/degraded-single-dialog.md). The three parts **must** be three separate conversations — the verifier cannot be the writer.
@@ -64,7 +64,7 @@ Case study: [`docs/history/`](docs/history/2026-09-03-two-state-example/). **Tha
 
 ```
 WebNote/
-├── AGENTS.public.md      # AI entry (generated from AGENTS.md)
+├── AGENTS.md             # AI entry (auto-loaded by agents under this name)
 ├── bot.yaml              # the one machine-readable fact: upstream of vendored skills
 ├── skills/               # SKILL.md routes; details live in references/ and steps/
 │   ├── webnote-workflow/ #   orchestrator + steps/ pipeline + single-dialog fallback

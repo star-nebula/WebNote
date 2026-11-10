@@ -178,3 +178,18 @@
 - `tools/extract-image-ocr.py` 在 Windows 跨盘符（`C:` ↔ `E:`）时 `os.path.relpath` 抛 `ValueError`；规避方式写在 `steps/branches/image.md`，**代码未修**。
 - 三态规范缺一份"标准示范"范例；现有 `docs/history/` 是两态时代的存档，`runs/_template/` 是空骨架。有真实多媒体批次时补。
 - `README.en.md` 与 `README.md` 的内容对等性没有断言，靠人维护。
+
+## 2026-11-10 · 入口改名：公开的用 `AGENTS.md`，私有的退成 `AGENTS.local.md`
+
+**问题**：本仓要共享出去，但入口文件叫 `AGENTS.public.md`——**没有任何工具会自动加载这个名字**。各工具认的是 `AGENTS.md`（pi / codex / Claude Code；项目里有 `CLAUDE.md` 时后者优先），Claude Code 二进制里的原话是 `AGENTS.md as project instructions: by default loaded where the project has no CLAUDE.md of its own`。原来的设计是「`AGENTS.md`=私有、`AGENTS.public.md`=生成物」，等于把唯一被自动加载的名字留给了只在本人机器上存在的文件：别人 clone 下来，agent 读到的是一个空入口。
+
+**决定**：
+
+1. `AGENTS.md` 改为**公开**、进 git；`AGENTS.local.md` 才是本机叠加层（gitignore）。`AGENTS.md` 开头一句「若存在 `AGENTS.local.md` 先读它」——同 `.env.example` / `.env`，读者不需要被教。
+2. **删掉 `tools/sync-agents-public.py`** 与 `<!-- private:start -->` 块机制。原来"私有版生成公开版"需要一条防漂移测试；反转后公开版是唯一手写本、私有版是叠加层，两者没有需要同步的内容。
+3. 防线改为断言性质：`test_entry_is_public_and_overlay_stays_private`（`AGENTS.md` 必须在 git 里、`AGENTS.local.md` 不许进、`persona/` 不许进）＋ 原有的泄漏扫描（扫的是被跟踪文件，`AGENTS.md` 在覆盖范围内）。
+4. 同步改：`README.md` / `README.en.md` 的入口链接与目录树、`docs/architecture.md`、`tests/README.md`、`tools/README.md`。
+
+**代价**：本机读入口要跳一次（`AGENTS.md` → `AGENTS.local.md`），一行指令解决；换来的是共享版本真的有入口。
+
+**顺带修正的一处认知**：`MEMORY`（以及 `AGENTS.public.md`）从来不是任何工具的协议名。能被"自动利用"的只有：`AGENTS.md` / `CLAUDE.md` 这类自动加载的指令文件、`skills/<name>/SKILL.md` 的 `description`（技能自动触发）、`.mcp.json`、hooks。所以记忆不该指望被读，而共享内容必须占住那几个固定的名字。

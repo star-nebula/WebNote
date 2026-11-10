@@ -1,10 +1,9 @@
-<!-- 由 tools/sync-agents-public.py 从仓库根的 AGENTS.md 生成，勿手改。 -->
-<!-- 私有内容（本机路径、账号、记忆库位置、汇报口径）已剔除。 -->
-
 # WebNote · 唯一入口
 
-本仓是「网页笔记工作流」的唯一来源：角色、流程、技能、工具都在这里。
+本仓是「网页笔记工作流」的唯一来源：流程、技能、工具都在这里。
 不存在第二份角色目录——要改流程就改本仓，本文件是 agent 的入口。
+
+> **若仓库根存在 `AGENTS.local.md`，先读它**：那是使用者的本机事实（解释器路径、推送用的 git、落库位置）。没有这个文件就是干净克隆，按本文件执行即可。
 
 按下面顺序读，不要凭记忆复现任何定义。
 
@@ -66,7 +65,7 @@
 ## 三条使用路径
 
 - **A 装配技能**：把 `<本仓>/skills/` 链进工具的 skill 目录（Claude Code → `.claude/skills/`；Codex、pi 等按各自机制），之后自然对话即触发。
-- **B 提示词**：把 `AGENTS.public.md` 与内容一起交给 AI（它本身就是入口说明）。没有 subagent 能力时用模式 B 三段式。
+- **B 提示词**：把 `AGENTS.md` 与内容一起交给 AI（它本身就是入口说明）。没有 subagent 能力时用模式 B 三段式。
 - **C 手动**：按 `skills/webnote-workflow/steps/` 的 `00`–`04` 顺序走，每步只加载当步文件。
 
 先跑 `python tools/check-env.py`：缺依赖只影响对应媒体，图文流程零依赖可用。
@@ -92,11 +91,11 @@
 1. `SKILL.md` 只做路由，细则放同目录 `references/`。
 2. 新增媒体能力：脚本进 `tools/`，并在 `tools/check-env.py` 登记「缺什么、怎么补」。
 3. **改产出格式要动两处**：`runs/_template/<文件>` 与对应步骤文件的 `format_needles`；`test_template_matches_step_card` 会比对，只改一边就红（其余位置自动跟随，不要另抄）。
-4. 改流程：同步更新 `steps/`、`README.md` 的能力表、受影响技能，以及本文件；改完跑 `python tools/sync-agents-public.py` 与 `python -m pytest tests -q`。
+4. 改流程：同步更新 `steps/`、`README.md` 的能力表、受影响技能，以及本文件；改完跑 `python -m pytest tests -q`（`pre-push` 钩子会自动跑同一套）。
 5. 环境变量只把**键名**写进 `.env.example`，真值放 `.env`（已 gitignore）；任何真实路径、Cookie、Key 不进公开文件。
 6. 不提交生成物与本机状态：`runs/`、`.workbuddy/`、`.venv-asr/`、临时音视频。
 7. **运行异常要留痕**：每次运行把工具失败、参数踩坑、人工补救写进该 run 的 `00-采编清单.md`「运行异常」节；同一异常出现第二次，就升级成一条测试或一条 `docs/decisions.md`，别留在 run 里自生自灭。
-8. **本仓是公开仓**：只提交脱敏内容。私有路径、账号、密钥一律写在 `<!-- private:start -->` 块里，这些块不会进入公开版。
+8. **本仓是公开仓**：只提交脱敏内容。私有路径、账号、密钥写在 `AGENTS.local.md` 或 `.env`（都已 gitignore），不进本文件。
 
 ## 边界
 
@@ -109,5 +108,4 @@
 - `python tools/check-env.py` —— 当前机器能跑哪些媒体分支
 - `python tools/check-links.py` —— 全仓 Markdown 相对链接
 - `python tools/check_vendor.py` —— 外部技能副本是否还是上游那份（`--online` 才联网）
-- `python tools/sync-agents-public.py --check` —— 公开版是否与私有版一致
 - `python -m pytest tests -q` —— 仓库不变量（表头契约、泄漏扫描、外部技能完整性）

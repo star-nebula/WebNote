@@ -34,6 +34,6 @@ __pycache__/
 
 
 # ===== 私有入口与角色原始件：只在本机 =====
-# AGENTS.md 是私有完整版（含本机路径、记忆库位置）；公开版是生成的 AGENTS.public.md
-/AGENTS.md
+# 入口 AGENTS.md 进 git（工具按这个名字加载）；本机叠加层 AGENTS.local.md 不进
+/AGENTS.local.md
 /persona/

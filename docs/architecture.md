@@ -106,7 +106,7 @@
 
 ### 方式二：一条提示词（不装配也能用）
 
-把 [`AGENTS.public.md`](../AGENTS.public.md) 与内容一起交给 AI——它本身就是入口说明，含角色清单、可写范围与执行规则。
+把 [`AGENTS.md`](../AGENTS.md) 与内容一起交给 AI——它本身就是入口说明，含步骤清单、可写范围与执行规则。
 
 没有 subagent 能力的聊天界面，改用模式 B 的三段式提示词：[`degraded-single-dialog.md`](../skills/webnote-workflow/references/degraded-single-dialog.md)。
 

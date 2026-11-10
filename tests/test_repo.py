@@ -3,7 +3,7 @@
 跑法：python -m pytest tests -q
 
 只断言「改了会静默变坏」的东西：
-  - 生成物与真源一致（AGENTS.public.md）
+  - 入口与私有叠加层各归其位（AGENTS.md 进 git，AGENTS.local.md 不进）
   - 私有路径不泄漏、旧路径不残留
   - 流水线由 `skills/webnote-workflow/steps/` 唯一表达：文件名即顺序，
     每个步骤文件自带格式针（`format_needles`），`runs/_template/` 必须与之一致
@@ -153,20 +153,11 @@ def test_invariants_have_one_source():
     assert not offenders, "「不改写用户已有文件」是废弃的铁律版本，仍在：\n" + "\n".join(offenders)
 
 
-def test_public_agents_in_sync():
-    if not (ROOT / "AGENTS.md").is_file():
-        pytest.skip("本地没有私有 AGENTS.md（公开克隆），跳过")
-    r = subprocess.run(
-        [sys.executable, "tools/sync-agents-public.py", "--check"], cwd=ROOT, capture_output=True, text=True
-    )
-    assert r.returncode == 0, (r.stdout + r.stderr).strip()
-
-
 def test_no_private_path_leak():
     hits = []
     for p in tracked_files():
         rel = p.relative_to(ROOT).as_posix()
-        if rel.startswith(LEAK_EXEMPT_PREFIX) or rel == "tools/sync-agents-public.py":
+        if rel.startswith(LEAK_EXEMPT_PREFIX):
             continue
         if not p.is_file() or p.suffix in BINARY_SUFFIX:
             continue
@@ -245,15 +236,16 @@ def test_vendored_references_all_reachable(name):
     assert refs <= linked, f"SKILL.md 没有引用到：{sorted(refs - linked)}"
 
 
-def test_private_files_stay_untracked():
-    """私有块与头像只在本机：AGENTS.md 与 persona/ 不能被跟踪。"""
-    for rel in ("AGENTS.md", "persona/avatar.png"):
-        path = ROOT / rel
-        if not path.exists():
-            continue
-        r = subprocess.run(["git", "check-ignore", "-q", rel], cwd=ROOT)
-        assert r.returncode == 0, f"{rel} 必须被 .gitignore 忽略（仓库是公开的）"
-    tracked = subprocess.run(
-        ["git", "ls-files", "AGENTS.md", "persona"], cwd=ROOT, capture_output=True, text=True
+def test_entry_is_public_and_overlay_stays_private():
+    """公开的必须是 AGENTS.md（工具按这个名字加载）；本机事实进 AGENTS.local.md 且不进 git。"""
+    tracked = {q.relative_to(ROOT).as_posix() for q in tracked_files()}
+    assert "AGENTS.md" in tracked, "AGENTS.md 必须被跟踪——各工具只认这个名字"
+    assert "AGENTS.local.md" not in tracked, "AGENTS.local.md 是本机叠加层，不许进 git"
+    overlay = ROOT / "AGENTS.local.md"
+    if overlay.exists():
+        r = subprocess.run(["git", "check-ignore", "-q", "AGENTS.local.md"], cwd=ROOT)
+        assert r.returncode == 0, "AGENTS.local.md 必须被 .gitignore 忽略"
+    persona = subprocess.run(
+        ["git", "ls-files", "persona"], cwd=ROOT, capture_output=True, text=True
     ).stdout.strip()
-    assert not tracked, f"私有内容不应进 git：{tracked}"
+    assert not persona, f"persona/ 是私有头像，不该进 git：{persona}"

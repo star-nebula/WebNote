@@ -4,7 +4,7 @@
 
 [![CI](https://github.com/star-nebula/WebNote/actions/workflows/ci.yml/badge.svg)](https://github.com/star-nebula/WebNote/actions/workflows/ci.yml)
 
-[English](README.en.md) · [给 AI 的入口](AGENTS.public.md) · [架构](docs/architecture.md)
+[English](README.en.md) · [给 AI 的入口](AGENTS.md) · [架构](docs/architecture.md)
 
 ## 这是什么
 
@@ -33,7 +33,7 @@
 | 路径 | 适合 | 做法 |
 |---|---|---|
 | **A 装配技能** | 有项目级 skill 的工具 | 把 `<本仓>/skills/` 链进工具的 skills 目录，之后自然对话即触发 |
-| **B 提示词** | 任何 AI | 把 [`AGENTS.public.md`](AGENTS.public.md) 和你的内容一起交给它 |
+| **B 提示词** | 任何 AI | 把 [`AGENTS.md`](AGENTS.md) 和你的内容一起交给它 |
 | **C 手动** | 想逐步控制 | 按 [`steps/`](skills/webnote-workflow/steps/) 的 `00`–`04` 顺序走，每步只加载当步文件 |
 
 工具没有 subagent 能力（网页版 ChatGPT / Claude）：用模式 B 三段式，提示词在 [`degraded-single-dialog.md`](skills/webnote-workflow/references/degraded-single-dialog.md)。**三段必须分三个对话**——核查不能自己查自己。
@@ -64,7 +64,7 @@ cp -r runs/_template runs/2026-11-09-主题     # 表头是硬契约，别改
 
 ```
 WebNote/
-├── AGENTS.public.md      # 给 AI 的公开入口（AGENTS.md 的脱敏生成物）
+├── AGENTS.md             # 给 AI 的入口（各工具按这个名字自动加载）
 ├── bot.yaml              # 只记一件事：外部技能的上游与 commit
 ├── skills/               # SKILL.md 只做路由，细则在 references/ 与 steps/
 │   ├── webnote-workflow/ #   总编排 + steps/ 流水线定义 + 模式 B 提示词
@@ -81,7 +81,6 @@ WebNote/
 │   ├── check-env.py      #   环境自检
 │   ├── check-links.py    #   Markdown 相对链接
 │   ├── check_vendor.py   #   外部技能副本是否还是上游那份
-│   ├── sync-agents-public.py  # 由 AGENTS.md 生成公开版
 │   └── extract-*.py      #   文档 / 网页 / 视频 / 图片 提取
 ├── tests/                # 仓库不变量（进 CI）
 │   └── manual/           #   需要真实浏览器的回归 + 离线夹具（不进 CI）

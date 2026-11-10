@@ -47,7 +47,6 @@
 | `check-env.py` | 当前机器能跑哪些媒体分支、缺什么怎么补 | 无 | 否 |
 | `check-links.py` | 全仓 Markdown 相对链接 | 无 | 是 |
 | `check_vendor.py [--online]` | 外部技能副本是否还是上游那份 | `gh` 或 `GITHUB_TOKEN`（仅 --online） | 是（离线） |
-| `sync-agents-public.py [--check]` | 由私有 `AGENTS.md` 生成 `AGENTS.public.md` | 无 | 是（--check） |
 
 `_migrations/` 里是已跑过的一次性脚本，不进运行时。
 
