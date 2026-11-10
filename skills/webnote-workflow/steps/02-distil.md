@@ -2,6 +2,12 @@
 name: distiller
 role: 笔记提炼员
 type: agent
+step: 3
+produces: 02-笔记.md
+format_needles:
+  - '**为什么值得保留**：'
+  - '**修订建议**：'
+  - '（出处：第 3 段 · 原文）'
 description: WebNote 第 3 步 · 笔记提炼员：对整理清单中「有正文」的页面提取每页 3~5 条核心要点，每条标注出处与来源类型
 context: isolated
 reads:

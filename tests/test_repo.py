@@ -4,8 +4,10 @@
 
 只断言「改了会静默变坏」的东西：
   - 生成物与真源一致（AGENTS.public.md）
-  - 私有路径不泄漏
-  - 产出表头 ↔ 步骤卡一致（六处手抄同一份契约，靠它兜住）
+  - 私有路径不泄漏、旧路径不残留
+  - 流水线由 `skills/webnote-workflow/steps/` 唯一表达：文件名即顺序，
+    每个步骤文件自带格式针（`format_needles`），`runs/_template/` 必须与之一致
+  - 三条铁律只在 `docs/architecture.md` 定义，别处只许引用
   - 外部技能副本真实、来源可查、主体指向的 references 都在
 不测「文件在不在」——git 已经是那个断言的来源。
 """
@@ -21,23 +23,17 @@ import pytest
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
-STEPS_DIR = "skills/webnote-workflow/references/steps"
+STEPS_DIR = Path("skills/webnote-workflow/steps")
+TEMPLATE_DIR = Path("runs/_template")
+INVARIANTS_SOURCE = Path("docs/architecture.md")
 
-# 契约文件：路径 → frontmatter 里必须有的字段（空列表 = 只要求存在）
-CONTRACT = {
-    "skills/webnote-workflow/SKILL.md": ["name:", "description:"],
-    "skills/web-archive/SKILL.md": ["name:", "description:"],
-    "skills/image-extract/SKILL.md": ["name:", "description:"],
-    "skills/video-extract/SKILL.md": ["name:", "description:"],
-    f"{STEPS_DIR}/collect.md": [],
-    f"{STEPS_DIR}/collect-image.md": [],
-    f"{STEPS_DIR}/collect-video-audio.md": [],
-    f"{STEPS_DIR}/collect-web-archive.md": [],
-    f"{STEPS_DIR}/confirm.md": [],
-    "agents/classifier.md": ["description:", "context:"],
-    "agents/distiller.md": ["description:", "context:"],
-    "agents/verifier.md": ["description:", "context:"],
-}
+# 技能入口：只有这四个 SKILL.md 参与路由（browser-skill 是外部副本，单独断言）
+SKILLS = [
+    "skills/webnote-workflow/SKILL.md",
+    "skills/web-archive/SKILL.md",
+    "skills/image-extract/SKILL.md",
+    "skills/video-extract/SKILL.md",
+]
 
 LEAK_PATTERNS = [
     r"[A-Za-z]:\\knowledge",
@@ -59,19 +55,102 @@ def read(p: Path) -> str:
     return p.read_text(encoding="utf-8", errors="ignore")
 
 
-def test_contract_files_present():
+def frontmatter(p: Path) -> dict:
+    text = read(p)
+    assert text.startswith("---\n"), f"{p.relative_to(ROOT).as_posix()} 缺 frontmatter"
+    end = text.find("\n---", 3)
+    assert end > 0, f"{p.relative_to(ROOT).as_posix()} frontmatter 未闭合"
+    return yaml.safe_load(text[4:end]) or {}
+
+
+def step_files() -> list[Path]:
+    return sorted(p for p in (ROOT / STEPS_DIR).glob("0*.md"))
+
+
+def test_skill_entries_present():
     missing, bad = [], []
-    for rel, fields in CONTRACT.items():
+    for rel in SKILLS:
         p = ROOT / rel
         if not p.is_file():
             missing.append(rel)
             continue
         head = read(p)[:1200]
-        for field in fields:
+        for field in ("name:", "description:"):
             if field not in head:
                 bad.append(f"{rel} 缺 {field}")
-    assert not missing, "契约文件缺失：\n" + "\n".join(missing)
+    assert not missing, "技能入口缺失：\n" + "\n".join(missing)
     assert not bad, "frontmatter 不完整：\n" + "\n".join(bad)
+
+
+def test_steps_are_the_only_pipeline():
+    """流水线的唯一定义在 steps/：文件名即顺序，编号连续，没有第二份顺序表。"""
+    files = step_files()
+    names = [p.name for p in files]
+    expected = ["00-collect.md", "01-classify.md", "02-distil.md", "03-verify.md", "04-confirm.md"]
+    assert names == expected, f"步骤文件应恰好是 {expected}，实际 {names}"
+
+    for i, p in enumerate(files, 1):
+        fm = frontmatter(p)
+        where = p.relative_to(ROOT).as_posix()
+        assert fm.get("step") == i, f"{where} 的 step 应为 {i}，实际 {fm.get('step')}"
+        assert fm.get("context") in {"none", "isolated", "fresh"}, f"{where} 的 context 取值非法：{fm.get('context')}"
+        produces = fm.get("produces")
+        assert produces, f"{where} 缺 produces"
+        assert (ROOT / TEMPLATE_DIR / produces).is_file(), f"{where} 声明的产出 {produces} 在 runs/_template 里不存在"
+        if fm.get("context") != "none":
+            # 需要独立上下文的步骤必须声明可写范围
+            writes = fm.get("writes") or []
+            assert writes and all(str(w).startswith("runs/<run>/") for w in writes), (
+                f"{where} 的 writes 必须全部落在 runs/<run>/ 内：{writes}"
+            )
+
+
+@pytest.mark.parametrize("path", step_files(), ids=lambda p: p.name)
+def test_template_matches_step_card(path):
+    """每份产出的表头由步骤文件的 format_needles 定义，模板必须一致。
+
+    加字段时：改步骤文件的 format_needles + 改 runs/_template 对应文件，测试自动跟着走。
+    """
+    fm = frontmatter(path)
+    needles = fm.get("format_needles") or []
+    assert needles, f"{path.name} 没有 format_needles（产出格式无处定义）"
+    src = read(path)
+    tpl = read(ROOT / TEMPLATE_DIR / fm["produces"])
+    for needle in needles:
+        assert needle in src, f"{path.name} 自己缺 {needle!r}"
+        assert needle in tpl, f"runs/_template/{fm['produces']} 缺 {needle!r}（规范改了，模板要一起改）"
+
+
+def test_run_template_is_tracked_not_ignored():
+    """骨架必须进 git：runs/* 的忽略规则不得把它吞掉。"""
+    target = "runs/_template/00-采编清单.md"
+    res = subprocess.run(["git", "check-ignore", target], cwd=ROOT, capture_output=True, text=True)
+    assert res.returncode == 1, f"{target} 被 .gitignore 忽略了，需要 !runs/_template/** 例外"
+
+
+def test_invariants_have_one_source():
+    """三条铁律只在 docs/architecture.md 定义；别处只能引用，不能另写一版。
+
+    历史上 `AGENTS.md` 与 `SKILL.md` 各写一版，第三条一版是「不改写用户已有文件」、
+    另一版是「落地必待确认」，调度器与入口因此对「闸门是什么」答案不同。
+    """
+    src = read(ROOT / INVARIANTS_SOURCE)
+    for phrase in ("正文不凭空编", "核查独立", "落地必待确认"):
+        assert phrase in src, f"{INVARIANTS_SOURCE} 缺少铁律「{phrase}」"
+
+    stale = "不改写用户已有文件"
+    offenders = []
+    for p in tracked_files():
+        rel = p.relative_to(ROOT).as_posix()
+        if rel.startswith(LEAK_EXEMPT_PREFIX) or rel.startswith("docs/history/"):
+            continue
+        if not p.is_file() or p.suffix not in {".md", ".py"}:
+            continue
+        if rel == INVARIANTS_SOURCE.as_posix():
+            continue
+        if stale in read(p):
+            offenders.append(rel)
+    assert not offenders, "「不改写用户已有文件」是废弃的铁律版本，仍在：\n" + "\n".join(offenders)
 
 
 def test_public_agents_in_sync():
@@ -99,65 +178,30 @@ def test_no_private_path_leak():
 
 
 def test_no_legacy_paths():
-    legacy = ["_agent_scripts", "Webpage note workflow.md"]
+    """已退役的结构不得回来：旧的步骤卡目录、旧的角色目录、旧脚本目录。"""
+    legacy = [
+        "references/steps",
+        "agents/classifier.md",
+        "agents/distiller.md",
+        "agents/verifier.md",
+        "_agent_scripts",
+        "Webpage note workflow.md",
+    ]
     ext = {".md", ".py", ".ps1", ".yml", ".yaml", ".json", ".toml", ".cfg"}
     hits = []
     for p in tracked_files():
         rel = p.relative_to(ROOT).as_posix()
-        if rel.startswith(LEAK_EXEMPT_PREFIX) or rel.startswith("tools/_migrations/"):
+        # docs/decisions.md 是决策台账，按规矩原文不改，必然提到当时的结构
+        if (rel.startswith(LEAK_EXEMPT_PREFIX) or rel.startswith(("tools/_migrations/", "docs/history/"))
+                or rel == "docs/decisions.md"):
             continue
         if not p.is_file() or p.suffix not in ext:
             continue
         text = read(p)
         for pat in legacy:
             if pat in text:
-                hits.append(f"{rel} 仍引用旧路径 {pat}")
-    assert not hits, "旧路径残留：\n" + "\n".join(hits)
-
-
-# runs/_template/ 的空骨架 ↔ 它的规范出处。表头改了任何一边都必须同步另一边。
-RUN_TEMPLATE = {
-    "00-采编清单.md": (
-        f"{STEPS_DIR}/collect.md",
-        ["| ID | 标题 | 域名 | 媒体格式 | 正文字符数 | 有正文 | 提取方式 | 提取结果 | 原文来源 |"],
-    ),
-    "01-整理清单.md": (
-        "agents/classifier.md",
-        ["| ID | 标题 | 域名 | 媒体格式 | 正文字符数 | 有正文 | 分类 | 原文来源 |"],
-    ),
-    "02-笔记.md": (
-        "agents/distiller.md",
-        ["**为什么值得保留**：", "**修订建议**：", "（出处：第 3 段 · 原文）"],
-    ),
-    "03-核查表.md": (
-        "agents/verifier.md",
-        ["| 条目 | 状态 | 来源类型 | 正文依据 |", "## 需用户回看的条目", "| 条目 | 状态 | 为什么需要回看 |"],
-    ),
-    "04-待确认提案.md": (
-        f"{STEPS_DIR}/confirm.md",
-        ["| 条目 | 建议动作 | 依据 |", "| 条目 | 问题 | 建议动作 |", "## 待你确认的落地动作"],
-    ),
-}
-
-
-@pytest.mark.parametrize("name", sorted(RUN_TEMPLATE))
-def test_run_template_matches_step_cards(name):
-    """新 run 的空骨架必须与步骤卡定义一致，防止每份产出的表头自己漂移。"""
-    source, needles = RUN_TEMPLATE[name]
-    src = read(ROOT / source)
-    tpl_path = ROOT / "runs/_template" / name
-    assert tpl_path.is_file(), f"runs/_template/{name} 缺失"
-    tpl = read(tpl_path)
-    for needle in needles:
-        assert needle in src, f"{source} 里找不到 {needle!r}（规范改了，模板与测试要一起改）"
-        assert needle in tpl, f"runs/_template/{name} 里找不到 {needle!r}"
-
-
-def test_run_template_is_tracked_not_ignored():
-    """骨架必须进 git：runs/* 的忽略规则不得把它吞掉。"""
-    target = "runs/_template/00-采编清单.md"
-    res = subprocess.run(["git", "check-ignore", target], cwd=ROOT, capture_output=True, text=True)
-    assert res.returncode == 1, f"{target} 被 .gitignore 忽略了，需要 !runs/_template/** 例外"
+                hits.append(f"{rel} 仍引用 {pat}")
+    assert not hits, "旧结构残留：\n" + "\n".join(hits)
 
 
 def test_vendored_skill_is_a_real_copy():
@@ -170,10 +214,7 @@ def test_vendored_skill_is_a_real_copy():
 
 
 def test_vendored_manifest_records_upstream():
-    """外部技能的真源必须记在 bot.yaml：上游仓库 + 具体 commit + 快照日期。
-
-    exe 版本号不行（别人不一定有那个 exe），本地中转副本也不行（那不是真源）。
-    """
+    """外部技能的真源必须记在 bot.yaml：上游仓库 + 具体 commit + 快照日期。"""
     bot = yaml.safe_load((ROOT / "bot.yaml").read_text(encoding="utf-8")) or {}
     entries = bot.get("vendored") or []
     assert entries, "bot.yaml 缺 vendored 段（外部技能的来源声明）"
@@ -202,6 +243,7 @@ def test_vendored_references_all_reachable(name):
     assert refs, f"skills/{name}/references 为空（上游布局是 SKILL.md + references/）"
     linked = set(re.findall(r"references/([\w-]+\.md)", read(skill / "SKILL.md")))
     assert refs <= linked, f"SKILL.md 没有引用到：{sorted(refs - linked)}"
+
 
 def test_memory_stays_private():
     """长期记忆只在本机：/memory/ 必须被 gitignore，且不得有任何文件被跟踪。"""

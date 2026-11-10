@@ -34,7 +34,7 @@ Not sure what your machine can do: `python tools/check-env.py` (standard library
 |---|---|---|
 | **A Install the skill** | Tools with project-level skills | Link `<repo>/skills/` into the tool's skills dir; conversation triggers it naturally afterwards |
 | **B One prompt** | Any AI | Hand [`AGENTS.public.md`](AGENTS.public.md) over together with your content |
-| **C Manual** | Step-by-step control | Walk [`steps/`](skills/webnote-workflow/references/steps/), loading one definition per step |
+| **C Manual** | Step-by-step control | Walk [`steps/`](skills/webnote-workflow/steps/), loading `00`–`04` in filename order |
 
 No subagent support (ChatGPT / Claude web): use Mode B, the three-part prompt in [`degraded-single-dialog.md`](skills/webnote-workflow/references/degraded-single-dialog.md). The three parts **must** be three separate conversations — the verifier cannot be the writer.
 
@@ -66,9 +66,9 @@ Case study: [`docs/history/`](docs/history/2026-09-03-two-state-example/). **Tha
 WebNote/
 ├── AGENTS.public.md      # AI entry (generated from AGENTS.md)
 ├── bot.yaml              # the one machine-readable fact: upstream of vendored skills
-├── agents/               # three role definitions, platform-neutral, single source of truth
-├── skills/               # SKILL.md routes; details live in references/
-│   ├── webnote-workflow/ #   orchestrator + steps/ + single-dialog fallback
+├── skills/               # SKILL.md routes; details live in references/ and steps/
+│   ├── webnote-workflow/ #   orchestrator + steps/ pipeline + single-dialog fallback
+│   │   └── steps/        #   ★ 00–04: filename order is the pipeline; contracts live here
 │   ├── web-archive/      #   lossless archiving of copy-protected / cloud docs
 │   ├── image-extract/    #   OCR + visual semantics
 │   ├── video-extract/    #   ASR + frame sampling
@@ -89,7 +89,7 @@ WebNote/
 | **B Single-dialog** | Tool can't open a new session | Collect + classify + distill in one dialog → **stop** → verify in a new conversation → confirm |
 | **C Lossless archive** | Copy-protected, cloud docs, login-walled pages | Archive only, no summarizing; distill separately afterwards |
 
-Verification is the safety gate: **an agent cannot audit itself.** If a fresh context is impossible, require the explicit degradation notice in `agents/verifier.md` — an unmarked degradation is a compliant-looking table hiding a real risk.
+Verification is the safety gate: **an agent cannot audit itself.** If a fresh context is impossible, require the explicit degradation notice in `steps/03-verify.md` — an unmarked degradation is a compliant-looking table hiding a real risk.
 
 ## Confirmation boundary
 

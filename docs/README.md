@@ -35,7 +35,7 @@ python tools/check_vendor.py --pull     # 升到上游 HEAD：覆盖副本、删
 
 - **v1（2026-07-14）**：四步工作流。把整理、提炼、独立核查、人工确认拆成四个各管一段的 Agent，核心命题是"可信优先"——AI 编的东西要在落地前被拦下。
 - **v2（2026-08-04）**：承认"不是每一步都需要独立 AI 上下文"。5 个 Agent 收敛成「调度器（主会话）+ 3 个 subagent」，只保留核查官必须全新上下文，其余确定性逻辑交回主会话。
-- **v3（现行，代码与文档同源）**：采编与确认留在主会话；归类、提炼、核查三个步骤创建 subagent；流程细则落在 `skills/webnote-workflow/references/steps/`，角色定义在 `agents/`，工具在 `tools/`，验证在 `tests/`。改流程改 `architecture.md`，不改 v1 / v2 正文。
+- **v3（现行，代码与文档同源）**：采编与确认留在主会话；归类、提炼、核查三个步骤创建 subagent；流水线定义（含角色契约与产出格式）落在 `skills/webnote-workflow/steps/`，工具在 `tools/`，验证在 `tests/`。改流程改 `architecture.md`，不改 v1 / v2 正文。
 
 v1 / v2 是已发表文章的存档，**正文保持发表时原样**，只在开头加版本标记；其中的旧路径、旧目录名不必修正。
 

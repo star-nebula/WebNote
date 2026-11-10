@@ -1,3 +1,14 @@
+---
+step: 1
+executor: 调度器
+context: none
+writes:
+  - runs/<run>/00-采编清单.md
+produces: 00-采编清单.md
+format_needles:
+  - '| ID | 标题 | 域名 | 媒体格式 | 正文字符数 | 有正文 | 提取方式 | 提取结果 | 原文来源 |'
+---
+
 # 采编（调度器自执行）
 
 > 产出：`runs/<run>/00-采编清单.md`
@@ -25,8 +36,8 @@
 | 图文（已有正文） | 直接使用，不调工具 | — |
 | 图文（正文为空） | `extract-webpage.py <URL>`（走 `bsk`，需在 PATH 上） | — |
 | 文档 | `extract-document.py <文件路径>` | — |
-| 图片 | OCR →（可选）Vision | [collect-image.md](collect-image.md) |
-| 视频 / 音频 | 页面文本 → ASR → 画面 | [collect-video-audio.md](collect-video-audio.md) |
+| 图片 | OCR →（可选）Vision | [branches/image.md](branches/image.md) |
+| 视频 / 音频 | 页面文本 → ASR → 画面 | [branches/video-audio.md](branches/video-audio.md) |
 | 无法判断 | `extract-webpage.py <URL>` 尽力读取 | — |
 
 **只加载命中的分支卡。** 处理一个 PDF 时不需要知道 ASR 怎么跑。

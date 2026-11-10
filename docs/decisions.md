@@ -129,3 +129,26 @@
 - `.gitignore` 需要 `!runs/_template/` 与 `!runs/_template/**` 两个例外（否则模板自己被忽略）。
 - `bot.yaml` 里 verifier 的 `write_scope: runs/*/03-核查表.md` 会误匹配 `runs/_template/`，因此 `tools/hooks/guard_write.py` 显式拒绝任何 `runs/_template/` 写入。
 - 三条测试兜底：模板文件齐全且表头与步骤卡一致、模板不被 gitignore、守卫拒绝写模板。
+
+## 2026-11-10 · 五步合一：流水线定义只留一份
+
+**问题**：同一个五步流程被写在四个地方——`docs/architecture.md` 的顺序表、`skills/webnote-workflow/SKILL.md` 的派发表、`references/steps/` 的五张卡、`agents/` 的三份角色定义，外加 `runs/_template/` 的表头。审计实测：改一步的上下文要求要动 3 处（其中 2 处会漏，`AGENTS.md:24-25` 的独立上下文表就与 `agents/*.md` 的 `context: isolated` 相反）；加一步要动 9 处。`references/steps/` 还自称"五步"却只有采编与确认，角色在隔壁——"五步"这个概念本身没有对应物。
+
+**决定**：`skills/webnote-workflow/steps/` 是流水线的唯一定义处。
+
+1. `00-collect.md` / `01-classify.md` / `02-distil.md` / `03-verify.md` / `04-confirm.md`，**序号由文件名表达**，不另设顺序表；采编分支卡收进 `steps/branches/`。
+2. 角色属性进步骤文件 frontmatter（`context` / `reads` / `writes` / `forbidden` / `produces` / `format_needles`）。`agents/` 目录删除——它的三个文件本来就是这三个步骤本身。
+3. 产出格式针（表头、必备小节）写进对应步骤文件的 `format_needles`，`tests/test_repo.py` 从它派生比对 `runs/_template/`。**规范成了测试的输入，而不是测试的旁注。**
+4. 铁律只在 `docs/architecture.md` 定义一处，`AGENTS.md` 与 `SKILL.md` 只留指针，并由测试拦住废弃版本回流。
+
+**为什么不是别的方案**：
+- 「加一份 `pipeline/00-05.yaml` 顺序表」会新增第五份副本，还是要人同步——维护成本不降反升。
+- 「保留 `agents/` 只删 `references/steps/`」仍需两处改 `context`，且 `steps/` 无法说清"每步谁执行"。
+- 「角色与步骤拆成 `roles/` + `steps/`」是当前四处的等价重排，只是换了名字。
+
+**代价**：
+- 步骤文件同时是"给调度器读的操作卡"和"给 subagent 读的角色契约"。两份读者读同一个文件——但这是有意的：subagent 本来就需要知道调度器会给它什么、它必须交回什么。
+- 序号是文件名的一部分，重排步骤要改名（5 个文件），换来的是一条人人可读的顺序。
+- 分支卡与主步骤同在 `steps/` 下，靠 `branches/` 子目录分隔。
+
+**维护成本对照**：改一步的上下文 3 处 → **1 处**；改产出格式 4 处 → **2 处**（步骤文件 + 模板，测试自动跟随）；加一步 9 处 → **3 处**（新步骤文件、模板、README 目录树——后两项有测试兜底）。

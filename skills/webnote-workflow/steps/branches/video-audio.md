@@ -1,3 +1,10 @@
+---
+branch_of: 00-collect
+order: 2
+executor: 调度器
+context: none
+---
+
 # 采编 · 视频 / 音频
 
 > 分支卡。由调度器在判断为视频或音频后加载，配合 `skills/video-extract/` 使用。

@@ -1,3 +1,10 @@
+---
+branch_of: 00-collect
+order: 1
+executor: 调度器
+context: none
+---
+
 # 采编 · 图片 / 截图
 
 > 分支卡。由调度器在判断为图片后加载，配合 `skills/image-extract/` 使用。
@@ -47,5 +54,5 @@ OCR 文字和 Vision 描述**不能混成一段**。
 ## 已知坑
 
 - **看不清就标 `[?]`，不编造**——这是 `skills/image-extract/` 的硬规则
-- **跨盘符问题**：Windows 下图片与 cwd 不同盘符时 `os.path.relpath` 会崩溃，规避方法见 [collect-video-audio.md](collect-video-audio.md) 的已知坑
+- **跨盘符问题**：Windows 下图片与 cwd 不同盘符时 `os.path.relpath` 会崩溃，规避方法见 [video-audio.md](video-audio.md) 的已知坑
 - Vision 参数 `reasoning_effort:"none"` + `detail:"high"` 已在 `ds_vision.py` 内部固定，不要改

@@ -1,3 +1,16 @@
+---
+step: 5
+executor: 调度器
+context: none
+writes:
+  - runs/<run>/04-待确认提案.md
+produces: 04-待确认提案.md
+format_needles:
+  - '| 条目 | 建议动作 | 依据 |'
+  - '| 条目 | 问题 | 建议动作 |'
+  - '## 待你确认的落地动作'
+---
+
 # 确认（调度器自执行）
 
 > 产出：`runs/<run>/04-待确认提案.md`

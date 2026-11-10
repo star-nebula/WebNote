@@ -34,7 +34,7 @@
 |---|---|---|
 | **A 装配技能** | 有项目级 skill 的工具 | 把 `<本仓>/skills/` 链进工具的 skills 目录，之后自然对话即触发 |
 | **B 提示词** | 任何 AI | 把 [`AGENTS.public.md`](AGENTS.public.md) 和你的内容一起交给它 |
-| **C 手动** | 想逐步控制 | 按 [`steps/`](skills/webnote-workflow/references/steps/) 五步走，每步只加载当步定义 |
+| **C 手动** | 想逐步控制 | 按 [`steps/`](skills/webnote-workflow/steps/) 的 `00`–`04` 顺序走，每步只加载当步文件 |
 
 工具没有 subagent 能力（网页版 ChatGPT / Claude）：用模式 B 三段式，提示词在 [`degraded-single-dialog.md`](skills/webnote-workflow/references/degraded-single-dialog.md)。**三段必须分三个对话**——核查不能自己查自己。
 
@@ -66,12 +66,10 @@ cp -r runs/_template runs/2026-11-09-主题     # 表头是硬契约，别改
 WebNote/
 ├── AGENTS.public.md      # 给 AI 的公开入口（AGENTS.md 的脱敏生成物）
 ├── bot.yaml              # 只记一件事：外部技能的上游与 commit
-├── agents/               # 三个角色定义，平台无关，唯一真源
-│   ├── classifier.md     #   四选一分类
-│   ├── distiller.md      #   提炼 3~5 条要点，标出处与来源类型
-│   └── verifier.md       #   三态核查（必须全新上下文）
-├── skills/               # SKILL.md 只做路由，细则在 references/
-│   ├── webnote-workflow/ #   总编排 + steps/ 五步细则 + 模式 B 提示词
+├── skills/               # SKILL.md 只做路由，细则在 references/ 与 steps/
+│   ├── webnote-workflow/ #   总编排 + steps/ 流水线定义 + 模式 B 提示词
+│   │   └── steps/        #   ★ 00–04 五步：文件名即顺序，契约与产出格式都在这里
+│   │       └── branches/ #     采编分支卡：图片 / 视频音频 / 无损拓存
 │   ├── web-archive/      #   防复制页 / 云文档 / 懒加载长文的无损拓存
 │   ├── image-extract/    #   图片 OCR + 画面语义
 │   ├── video-extract/    #   视频 ASR + 抽帧
@@ -104,7 +102,7 @@ WebNote/
 | **B 单对话框** | 工具开不了新会话 | 同对话做采编+分类+提炼 → **停下** → 用户带产物到新对话核查 → 带回确认 |
 | **C 无损拓存** | 防复制页 / 云文档 / 登录墙长文 | 只拓存不摘要；要笔记就拓存核验后再单独提炼 |
 
-核查是安全闸门：**自己查自己等于没查**。真开不了新对话，按 `agents/verifier.md` 的降级声明显式标注——不声明，就是用一份看起来合规的表掩盖风险。
+核查是安全闸门：**自己查自己等于没查**。真开不了新对话，按 `steps/03-verify.md` 的降级声明显式标注——不声明，就是用一份看起来合规的表掩盖风险。
 
 ## 确认边界
 

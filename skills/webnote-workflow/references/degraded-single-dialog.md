@@ -6,7 +6,7 @@
 
 **为什么分三段**：核查不能自己查自己。第一段写笔记、第二段在**新对话**里核查、第三段回来出提案——这是这套流程存在的全部理由，不能合并。
 
-**无法开新对话时**：按 `agents/verifier.md` 的「降级声明」显式标注独立性不足，不要用一份看起来合规的表掩盖风险。
+**无法开新对话时**：按 `steps/03-verify.md` 的「降级声明」显式标注独立性不足，不要用一份看起来合规的表掩盖风险。
 
 ---
 
@@ -19,15 +19,15 @@
 项目根目录：<替换成你的实际路径>
 
 【读这两个文件】
-1. <项目根目录>/skills/webnote-workflow/references/steps/collect.md
+1. <项目根目录>/skills/webnote-workflow/steps/00-collect.md
 2. <项目根目录>/docs/architecture.md（了解整体架构即可）
 
 【按顺序执行前三步】
-第 1 步 采编：按 <项目根目录>/skills/webnote-workflow/references/steps/collect.md 的媒体分类规则判断每条内容，只加载命中的分支卡。
+第 1 步 采编：按 <项目根目录>/skills/webnote-workflow/steps/00-collect.md 的媒体分类规则判断每条内容，只加载命中的分支卡。
         产出 00-采编清单.md
-第 2 步 归类：读 <项目根目录>/agents/classifier.md，按其中要求做四选一分类。
+第 2 步 归类：读 <项目根目录>/skills/webnote-workflow/steps/01-classify.md，按其中要求做四选一分类。
         产出 01-整理清单.md
-第 3 步 笔记：读 <项目根目录>/agents/distiller.md，每条要点标注出处与来源类型
+第 3 步 笔记：读 <项目根目录>/skills/webnote-workflow/steps/02-distil.md，每条要点标注出处与来源类型
         （原文 / OCR / ASR / Vision 四选一）。
         产出 02-笔记.md
 
@@ -44,7 +44,7 @@
 项目根目录：<替换成你的实际路径>
 
 【读这个文件】
-<项目根目录>/agents/verifier.md
+<项目根目录>/skills/webnote-workflow/steps/03-verify.md
 
 【你的角色】
 你是核查官，与刚才写笔记的是两个完全独立的 AI。你的任务是逐条比对原文与笔记，
@@ -70,7 +70,7 @@ runs/<日期-主题>/03-核查表.md，并在文件末尾单列「需用户回�
 项目根目录：<替换成你的实际路径>
 
 【读这个文件】
-<项目根目录>/skills/webnote-workflow/references/steps/confirm.md
+<项目根目录>/skills/webnote-workflow/steps/04-confirm.md
 
 【输入】
 runs/<日期-主题>/ 下的 01-整理清单.md、02-笔记.md、03-核查表.md
@@ -90,4 +90,4 @@ runs/<日期-主题>/04-待确认提案.md
 
 在同一个对话里接着问"你检查一下有没有编造"，得到的通常是一份自我辩护，不是核查。
 
-如果实在没法开新对话，至少让 AI 在核查表头部**显式标注降级性质**——格式见 `agents/verifier.md` 的「降级声明」一节。声明了，你至少知道这份表的分量；不声明，就是在用一个看起来合规的表格掩盖风险。
+如果实在没法开新对话，至少让 AI 在核查表头部**显式标注降级性质**——格式见 `skills/webnote-workflow/steps/03-verify.md` 的「降级声明」一节。声明了，你至少知道这份表的分量；不声明，就是在用一个看起来合规的表格掩盖风险。

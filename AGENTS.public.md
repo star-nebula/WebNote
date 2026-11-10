@@ -10,13 +10,17 @@
 
 ## 本项目提供什么（任何工具通用）
 
-**角色**——读定义文件，按它的 `reads` / `writes` / `forbidden` 执行：
+**流水线**——五步的定义全在 `skills/webnote-workflow/steps/`，**文件名就是顺序**：
 
-| 角色 | 定义 | 可写 | 独立上下文 |
-|---|---|---|---|
-| `classifier` | `agents/classifier.md` | `runs/*/01-整理清单.md` | 否 |
-| `distiller` | `agents/distiller.md` | `runs/*/02-笔记.md` | 否 |
-| `verifier` | `agents/verifier.md` | `runs/*/03-核查表.md` | 必须 |
+| 步 | 文件 | 角色 | 可写 | 上下文 |
+|---|---|---|---|---|
+| 1 采编 | `steps/00-collect.md` | 调度器自己 | `runs/*/00-采编清单.md` | 主会话 |
+| 2 归类 | `steps/01-classify.md` | `classifier` | `runs/*/01-整理清单.md` | `isolated`（建议独立） |
+| 3 提炼 | `steps/02-distil.md` | `distiller` | `runs/*/02-笔记.md` | `isolated`（建议独立） |
+| 4 核查 | `steps/03-verify.md` | `verifier` | `runs/*/03-核查表.md` | `fresh`（必须全新） |
+| 5 确认 | `steps/04-confirm.md` | 调度器自己 | `runs/*/04-待确认提案.md` | 主会话 |
+
+路径相对 `skills/webnote-workflow/`。每个文件头部的 frontmatter 是契约（`context` / `reads` / `writes` / `forbidden` / `produces` / `format_needles`），按它执行。
 
 **技能**——开工先读对应 `SKILL.md`（只做路由，细则在 `references/`）：
 
@@ -29,12 +33,12 @@
 
 - `skills/browser-skill` ← https://github.com/Tencent/BrowserSkill @ `e380cbc`（快照 2026-11-09，`SKILL.md` + `references/`；来源与刷新见 `bot.yaml` 的 `vendored:`）
 
-**产出格式**：`runs/_template/` 五份空骨架是唯一契约，起新 run 整目录复制，表头不改。
+**产出格式**：定义在各个 `steps/0N-*.md` 的 `format_needles` 里；`runs/_template/` 是与之逐条一致的空骨架。起新 run 整目录复制，表头不改。
 
 **怎么用（不依赖任何工具的注册表）：**
 
 1. 需要某个角色时，读它的定义文件，按契约执行。你的工具不支持子 agent，就自己扮演，**一次只扮一个**。
-2. 标「必须独立上下文」的角色，必须在不携带上文的情况下执行（新会话，或明确声明「以下判断不参考我此前的结论」）。做不到就按 `agents/verifier.md` 的降级声明**显式标注**。
+2. `context: fresh` 的步骤必须在不携带上文的情况下执行（新会话，或明确声明「以下判断不参考我此前的结论」）。做不到就按 `steps/03-verify.md` 的降级声明**显式标注**。
 3. 表里的「可写」是硬边界：越界的一律不写，把内容作为回复交回主 agent。
 
 > 这套结构只依赖一件事：**能读文件就够**。工具支持 skill / subagent 注册时可以更省事，但不注册不影响流程成立——注册只是把"靠遵守"变成"靠机制"。
@@ -44,9 +48,9 @@
 | 路径 | 是什么 | 什么时候读 |
 |---|---|---|
 | `skills/` | 四个自有技能 + 一个外部副本 | 开工先读对应 `SKILL.md`，细则在 `references/` |
-| `skills/webnote-workflow/references/steps/` | 五步流程细则（collect / collect-image / collect-video-audio / collect-web-archive / confirm） | 手动流水线逐条读 |
+| `skills/webnote-workflow/steps/` | **流水线唯一定义**：`00`–`04` 五个步骤文件（文件名即顺序），每份自带契约与产出格式 | 手动流水线按编号逐条读 |
+| `skills/webnote-workflow/steps/branches/` | 采编分支卡：`image` / `video-audio` / `web-archive` | 只在 `00-collect.md` 判断命中时读 |
 | `skills/webnote-workflow/references/degraded-single-dialog.md` | 模式 B 三段式（无 subagent 时） | 工具开不了新会话时 |
-| `agents/` | 三个子角色定义，平台无关，唯一真源 | 派发前读，把**文件路径**交给它 |
 | `skills/browser-skill/` | 外部技能副本（`bsk` CLI 说明），**勿手改** | 只在改 `extract-webpage.py` 调用方式时读 |
 | `bot.yaml` | 只记一件事：外部技能的上游 / commit / 快照 / 文件数 | 刷新副本（`check_vendor.py --pull`）或查"这份是哪一代" |
 | `tools/` | 采编加速器（标准库为主，可选依赖按需装）+ 自检脚本 | 采集、转写、拓存、自检时 |
@@ -58,24 +62,23 @@
 | `docs/` | 架构 `architecture.md`（现行）、`versions/` 已发表旧版、`decisions.md` 决策、`history/` 历史存档（勿照抄） | 理解整体设计 / 追溯缘由 |
 | `memory/MEMORY.md` | **本 bot 的长期记忆**（私有，不入 git）：判据、决策台账、教训、本机事实 | 会话开头先读这一份 |
 | `memory/log/` | 按日期的流水（私有，不入 git） | 只在追溯"当时为什么"时读 |
-| `persona/` | 角色头像原件（本地私有，不入 git） | 一般不用读 |
 
-`agents/`、`skills/webnote-workflow/references/steps/`、`tools/` 在运行中是权威，与 `README.md` 表述冲突时以它们为准；与**用户最新直接指令**冲突时以用户为准。
+`skills/webnote-workflow/steps/`、`tools/`、`docs/architecture.md` 在运行中是权威，与 `README.md` 表述冲突时以它们为准；与**用户最新直接指令**冲突时以用户为准。
 
 ## 三条使用路径
 
 - **A 装配技能**：把 `<本仓>/skills/` 链进工具的 skill 目录（Claude Code → `.claude/skills/`；Codex、pi 等按各自机制），之后自然对话即触发。
 - **B 提示词**：把 `AGENTS.public.md` 与内容一起交给 AI（它本身就是入口说明）。没有 subagent 能力时用模式 B 三段式。
-- **C 手动**：按 `skills/webnote-workflow/references/steps/` 五步走，每步只加载当步定义。
+- **C 手动**：按 `skills/webnote-workflow/steps/` 的 `00`–`04` 顺序走，每步只加载当步文件。
 
 先跑 `python tools/check-env.py`：缺依赖只影响对应媒体，图文流程零依赖可用。
 
 ## 硬约束
 
-1. **技能优先，不凭记忆简化。** 这类任务开头加载 `webnote-workflow`；视频/音频另加 `video-extract`；防复制页、钉钉/飞书云文档、登录墙、懒加载长文另加 `web-archive` + `steps/collect-web-archive.md`。不要因为"看起来简单"跳过技能里的步骤。
+1. **技能优先，不凭记忆简化。** 这类任务开头加载 `webnote-workflow`；视频/音频另加 `video-extract`；防复制页、钉钉/飞书云文档、登录墙、懒加载长文另加 `web-archive` + `steps/branches/web-archive.md`。不要因为"看起来简单"跳过技能里的步骤。
 2. **范围**：只做内容提取与笔记整理；无关的开发/运维工作不在本角色内，除非用户明确要求。
-3. **核查独立**：核查者必须是全新上下文，且不是笔记撰写者。做不到就按 `agents/verifier.md` 的降级声明**显式标注**，不要用一份看起来合规的表掩盖。
-4. **三条铁律**：① 正文不凭空编——提取不到就如实写「无」；② 核查独立；③ 不改写用户已有文件，命名冲突就用来源/日期后缀或另起一份；原始输入只读。
+3. **核查独立**：核查者必须是全新上下文，且不是笔记撰写者。做不到就按 `steps/03-verify.md` 的降级声明**显式标注**，不要用一份看起来合规的表掩盖。
+4. **三条铁律见 [`docs/architecture.md`](docs/architecture.md#三条不可逾越)**（正文不凭空编 / 核查独立 / 落地必待确认）——此处不重写。原始输入只读，命名冲突用来源或日期后缀，另起一份。
 5. **凭据只查可用性，不读不写不报值。**
 
 ## 交付模式（写之前先选一个）
@@ -90,7 +93,7 @@
 
 1. `SKILL.md` 只做路由，细则放同目录 `references/`。
 2. 新增媒体能力：脚本进 `tools/`，并在 `tools/check-env.py` 登记「缺什么、怎么补」。
-3. **改产出格式要动两处**：`runs/_template/<文件>` 与它的规范出处（`skills/.../steps/*.md` 或 `agents/*.md`）；`test_run_template_matches_step_cards` 会比对，只改一边就红。
+3. **改产出格式要动两处**：`runs/_template/<文件>` 与对应步骤文件的 `format_needles`；`test_template_matches_step_card` 会比对，只改一边就红（其余位置自动跟随，不要另抄）。
 4. 改流程：同步更新 `steps/`、`README.md` 的能力表、受影响技能，以及本文件；改完跑 `python tools/sync-agents-public.py` 与 `python -m pytest tests -q`。
 5. 环境变量只把**键名**写进 `.env.example`，真值放 `.env`（已 gitignore）；任何真实路径、Cookie、Key 不进公开文件。
 6. 不提交生成物与本机状态：`runs/`、`.workbuddy/`、`.venv-asr/`、临时音视频。

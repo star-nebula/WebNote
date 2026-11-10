@@ -1,7 +1,7 @@
 # 本仓唯一需要机器读的清单：外部技能的来源与代际。
 #
 # 为什么只有这一段：
-#   角色（agents/*.md）、技能路由（skills/*/SKILL.md）、产出格式（runs/_template/）
+#   流水线（skills/webnote-workflow/steps/）、技能路由（skills/*/SKILL.md）、产出格式（各步骤 format_needles）
 #   都有自己的发现约定，工具直接按路径读，不需要额外注册文件；
 #   而「这份副本来自上游哪一代」没有任何约定能表达，只能显式记下来。
 #
