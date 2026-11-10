@@ -50,10 +50,10 @@ run() {
 
 echo "pre-push: 本地检查（python: $py）"
 if "$py" -c 'import pytest' >/dev/null 2>&1; then
-    run "仓库不变量" "$py" -m pytest tests -q
+    run "pytest" "$py" -m pytest tests -q
 else
-    echo "  仓库不变量    SKIPPED（$py 没有 pytest：pip install -r requirements-dev.txt）"
+    echo "  pytest        SKIPPED（$py 没有 pytest：pip install -r requirements-dev.txt）"
 fi
-run "外部技能" "$py" tools/check_vendor.py
-run "链接" "$py" tools/check-links.py
+run "vendored" "$py" tools/check_vendor.py
+run "links" "$py" tools/check-links.py
 echo "pre-push: 通过"
