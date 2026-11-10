@@ -7,6 +7,11 @@ runs/*
 !runs/_template/
 !runs/_template/**
 
+# 跑完的 run 可以挪进 _archive 存档：目录本身留一个占位，内容仍不入仓
+!runs/_archive/
+runs/_archive/*
+!runs/_archive/.gitkeep
+
 # ===== Agent 工具的私有位（会话重建，本机产物，不进仓）=====
 # .workbuddy/ 由 WorkBuddy 自己创建；记忆本体在知识库 Projects/WebNote/，不在仓里
 .workbuddy/

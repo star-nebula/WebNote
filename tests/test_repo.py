@@ -278,6 +278,8 @@ def test_steps_declare_boundaries():
             if item.startswith(("skills/", "docs/", "tools/")):
                 if not (ROOT / item).exists():
                     problems.append(f"{name} 的 reads 指向不存在的路径：{item}")
+            elif item.startswith("runs/<run>/原文/"):
+                continue  # 运行期生成的正文副本，模板里没有对应文件
             elif item.startswith("runs/<run>/"):
                 if not (ROOT / TEMPLATE_DIR / Path(item).name).is_file():
                     problems.append(f"{name} 的 reads 读不到对应产出：{item}")
@@ -431,3 +433,36 @@ def test_rework_path_is_defined():
     assert "回修" in distil, "01-distil.md 缺「回修模式」"
     assert "不许新增条目" in distil, "回修必须禁止新增条目（新增等于绕过核查）"
     assert "最多回修两次" in confirm, "03-confirm.md 必须写明回修次数上限"
+
+
+def test_original_text_copy_is_source_of_truth():
+    """采编必须留正文副本，提炼与核查只读它。
+
+    网页是活的：改版、付费墙收紧、登录态过期都会让核查官看到与笔记匠不同的东西，
+    那时判「可疑」删掉的是无辜条目。
+    """
+    collect = read(ROOT / STEPS_DIR / "00-collect.md")
+    assert "原文/<ID>.txt" in collect, "00-collect.md 必须规定把正文落到 runs/<run>/原文/<ID>.txt"
+    for name in ("01-distil.md", "02-verify.md"):
+        step = read(ROOT / STEPS_DIR / name)
+        assert "原文/<ID>.txt" in step, f"{name} 的 reads 必须指向正文副本"
+    assert "不要去重抓" in read(ROOT / STEPS_DIR / "01-distil.md"), "01-distil.md 必须禁止重抓网页"
+
+
+def test_landing_name_rule_is_defined():
+    """落库命名规则：标题 + 作者 + 平台，且只约束 Resources。"""
+    confirm = read(ROOT / STEPS_DIR / "03-confirm.md")
+    for kw in ("<标题>", "<作者>", "<平台>", "Resources"):
+        assert kw in confirm, f"03-confirm.md 的落库命名缺 {kw}"
+    assert "Knowledge" in confirm, "03-confirm.md 必须说明 Knowledge 不适用这条命名"
+
+
+def test_run_archive_dir_is_tracked():
+    """跑完的 run 要有去处，否则只有占位没有归档习惯。"""
+    placeholder = ROOT / "runs/_archive/.gitkeep"
+    assert placeholder.exists(), "runs/_archive/ 不存在"
+    tracked = subprocess.run(
+        ["git", "ls-files", "--error-unmatch", "runs/_archive/.gitkeep"],
+        cwd=ROOT, capture_output=True, text=True,
+    )
+    assert tracked.returncode == 0, "runs/_archive/.gitkeep 未被 git 跟踪"

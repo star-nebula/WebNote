@@ -42,6 +42,7 @@ No subagent support (ChatGPT / Claude web): use Mode B, the three-part prompt in
 
 ```bash
 cp -r runs/_template runs/2026-11-09-topic     # headers are a contract — don't edit them
+# when done, move the whole run into runs/_archive/ (contents stay out of git)
 ```
 
 The five files are filled in order by scheduler / classifier / distiller / verifier / scheduler. Originals are never copied or moved — only their paths are recorded in `00`. Anything that went wrong during the run goes into that run's `## 运行异常` section in `00`; the same failure twice should become a test.

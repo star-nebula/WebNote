@@ -58,7 +58,8 @@
 | `tests/` | 仓库不变量（pytest，进 CI） | 改结构、改表头、改生成逻辑后跑 |
 | `tests/manual/` | 需要真实浏览器的回归与离线夹具（不进 CI） | 改动 `web-archive` 脚本后手动跑 |
 | `runs/_template/` | 新 run 的空骨架（**进 git、只读**；表头是硬契约） | 起新 run 时整目录复制成 `runs/<日期-主题>/` |
-| `runs/<日期-主题>/` | 一次运行的五个产物（本地，gitignore 忽略） | 只在本次运行内读 |
+| `runs/<日期-主题>/` | 一次运行的产物：`00`–`03` 四份 md + `原文/<ID>.txt` 正文副本（本地，gitignore 忽略） | 只在本次运行内读 |
+| `runs/_archive/` | 已跑完的 run 挪进来存档（目录占位进 git，内容仍不入仓） | 复盘时翻，不参与任何步骤 |
 | `docs/` | 架构 `architecture.md`（现行）、`versions/` 已发表旧版、`decisions.md` 决策、`history/` 历史存档（勿照抄） | 理解整体设计 / 追溯缘由 |
 
 `skills/webnote-workflow/steps/`、`tools/`、`docs/architecture.md` 在运行中是权威，与 `README.md` 表述冲突时以它们为准；与**用户最新直接指令**冲突时以用户为准。
