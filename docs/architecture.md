@@ -1,6 +1,6 @@
 # 网页笔记工作流
 
-> **版本：v3（现行）。** v1「四步工作流」（2026-07-14）与 v2「五个 Agent 减到三个」（2026-08-04）见 [`versions/`](versions/)，版本关系见 [`docs/README.md`](README.md)。本文与代码同源，改流程只改这里。
+> **版本：v3（现行）。** v1「四步工作流」（2026-07-14）与 v2「五个 Agent 减到三个」（2026-08-04）见 [`versions/`](versions/)，版本关系见 [`docs/README.md`](README.md)。本文解释为什么这样切分；**流程的唯一定义在 [`skills/webnote-workflow/steps/`](../skills/webnote-workflow/steps/)**，改流程改那里，本文随之更新。
 
 把"内容采集 → 整理分类 → 提炼笔记 → 确认发布"拆成**调度器（主会话） + 三个独立 Agent** 分工协作。
 

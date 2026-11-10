@@ -2,7 +2,7 @@
 """
 Agent 0 · 采编 — 图片本地 OCR 工具（纯本地，无云端）
 
-对图片（小红书图文笔记下载的本地图片，或任意本地图片）做中文 OCR，
+对本地图片做中文 OCR，
 使用 RapidOCR（onnxruntime），完全离线、数据不出本机。
 与视频画面采集（extract-video-frames.py）共用同一套 RapidOCR 后端。
 

@@ -1,12 +1,13 @@
 ---
 name: classifier
-role: 内容分类员
+role: 归类师
 type: agent
 step: 2
+executor: 调度器派发 subagent
 produces: 01-整理清单.md
 format_needles:
   - '| ID | 标题 | 域名 | 媒体格式 | 正文字符数 | 有正文 | 分类 | 原文来源 |'
-description: WebNote 第 2 步 · 内容分类员：对采编清单中「有正文」的条目做四选一语义分类（学习 / 借鉴 / 内容补充 / 可归档）
+description: WebNote 第 2 步 · 归类师：对采编清单中「有正文」的条目做四选一语义分类（学习 / 借鉴 / 内容补充 / 可归档）
 context: isolated
 reads:
   - runs/<run>/00-采编清单.md

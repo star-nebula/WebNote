@@ -65,6 +65,7 @@ Case study: [`docs/history/`](docs/history/2026-09-03-two-state-example/). **Tha
 ```
 WebNote/
 ├── AGENTS.md             # AI entry (auto-loaded under this name); public, tracked
+├── AGENTS.local.md       # private overlay (machine facts / preferences; gitignored, not in this tree)
 ├── bot.yaml              # the one machine-readable fact: upstream of vendored skills
 ├── skills/               # SKILL.md routes only; pipeline detail in steps/, per-skill data in references/
 │   ├── webnote-workflow/ #   orchestrator + steps/ pipeline + Mode B prompt
@@ -90,7 +91,12 @@ WebNote/
 │   ├── decisions.md      # decision log
 │   ├── versions/         # published earlier versions (text kept as published)
 │   └── history/          # archive: obsolete formats, kept only to explain where rules came from
-└── .env.example          # env var names only (values live in .env)
+├── .github/workflows/    # CI: pytest → vendored skill → compileall → links
+├── .githooks/pre-push    # local pre-push self-check (see below)
+├── .gitattributes        # no text conversion for the vendored copy (--online relies on it)
+├── requirements-dev.txt  # pytest and PyYAML only
+├── LICENSE               # MIT
+└── README.en.md          # this file (mirrors the Chinese version)
 ```
 
 ## Execution modes
@@ -120,6 +126,16 @@ The AI produces a proposal; you press the key. The test: **if this action is wro
 - **Test dependencies are declared**: `pip install -r requirements-dev.txt` (only `pytest` and `PyYAML`; the tools themselves are mostly standard library). CI uses it as the cache key.
 - **Pre-push self-check**: run `git config core.hooksPath .githooks` once; every push then runs pytest / vendored-skill / link checks first (about 3 seconds, offline). Skip with `git push --no-verify` when in a hurry.
 - Machine-specific settings (dedicated ASR venv, local model snapshots, which git binary is used for pushing) are not part of the shared contract; they live in the untracked `AGENTS.local.md`.
+
+### Environment variables
+
+Three optional keys; missing ones only disable their own media type. **This repo does not load `.env`** — inject them through the shell (`export`, or `setx` on Windows then reopen the terminal).
+
+| Key | Read by | Needed when |
+|---|---|---|
+| `DEEPSEEK_API_KEY` | `tools/ds_vision.py` | Image / video frame understanding |
+| `OCR_PYTHON` | `tools/extract-image-ocr.py`, `extract-video-frames.py` | RapidOCR installed in a separate interpreter |
+| `GITHUB_TOKEN` | `tools/check_vendor.py --online` | No `gh` installed, to avoid anonymous rate limits (403) |
 
 ## License
 

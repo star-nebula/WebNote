@@ -71,7 +71,8 @@ yt-dlp 下载音频 -> ffmpeg 转为 16kHz WAV -> faster-whisper 转写 -> 带�
 
 ```
 python extract-video-asr.py <URL>
-  --model small|medium|large-v3-turbo   # 默认 large-v3-turbo
+  --model small|medium|large-v3-turbo   # 默认 large-v3
+                                        # large-v3-turbo 上游已私有化，未授权时下载会 401
   --max-duration <分钟>                  # 默认 30，超时跳过
   --language zh|auto                     # 默认 zh（简体中文）
 ```

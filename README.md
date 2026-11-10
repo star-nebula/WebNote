@@ -44,7 +44,7 @@
 cp -r runs/_template runs/2026-11-09-主题     # 表头是硬契约，别改
 ```
 
-五个文件由 主会话 / 归类师 / 笔记匠 / 核查官 / 主会话 依次填。原文不复制、不移动，只在 `00` 里记来源路径。
+五个文件由 主会话 / 归类师 / 笔记匠 / 核查官 / 主会话 依次填。原文不复制、不移动，只在 `00` 里记来源路径。运行里踩到的工具问题、参数坑、人工补救记进 `00-采编清单.md` 的「运行异常」节——同一异常出现第二次，就该变成一条测试。
 
 ## 为什么核查是三态
 
@@ -65,6 +65,7 @@ cp -r runs/_template runs/2026-11-09-主题     # 表头是硬契约，别改
 ```
 WebNote/
 ├── AGENTS.md             # 给 AI 的入口（各工具按这个名字自动加载）
+├── AGENTS.local.md       # 私有叠加层（本机事实 / 偏好；gitignore，不在此树）
 ├── bot.yaml              # 只记一件事：外部技能的上游与 commit
 ├── skills/               # SKILL.md 只做路由；流水线细则在 steps/，技能资料在各自 references/
 │   ├── webnote-workflow/ #   总编排 + steps/ 流水线 + 模式 B 提示词
@@ -81,7 +82,7 @@ WebNote/
 ├── tools/                # 采编加速器 + 自检脚本（依赖都可选）
 │   ├── check-env.py      #   环境自检
 │   ├── check-links.py    #   Markdown 相对链接
-│   ├── check_vendor.py   #   外部技能副本是否还是上游那份
+│   ├── check_vendor.py   #   外部技能副本是否还是上游那份（--pull 升版）
 │   └── extract-*.py      #   文档 / 网页 / 视频 / 图片 提取
 ├── tests/                # 仓库不变量（进 CI）
 │   └── manual/           #   需要真实浏览器的回归 + 离线夹具（不进 CI）
@@ -90,7 +91,12 @@ WebNote/
 │   ├── decisions.md      # 决策记录
 │   ├── versions/         # 已发表旧版（正文原样）
 │   └── history/          # 历史存档：格式已废弃，只用来解释规则来由
-└── .env.example          # 环境变量键名（真值放 .env）
+├── .github/workflows/    # CI：pytest → 外部技能 → compileall → 链接
+├── .githooks/pre-push    # 推送前本地自检（见「开发环境」）
+├── .gitattributes        # 外部技能副本关行尾转换（--online 比对依赖）
+├── requirements-dev.txt  # 只有 pytest 与 PyYAML
+├── LICENSE               # MIT
+└── README.en.md          # 英文版（与本文一一对应）
 ```
 
 ## 执行模式
@@ -119,7 +125,17 @@ AI 出提案，你按确认键。判据：**这个动作错了，撤得回来吗
 
 - **测试依赖有声明**：`pip install -r requirements-dev.txt`（只有 `pytest` 与 `PyYAML`；工具本身以标准库为主）。CI 用它做缓存键。
 - **push 前本地自检**：`git config core.hooksPath .githooks`，之后每次 push 会先跑 pytest / 外部技能 / 链接检查（约 3 秒，离线）。急用时 `git push --no-verify` 跳过。
-- 本机专属设置（ASR 专用环境、模型快照、推送走哪个 git）不属于通行约定，写在仓库外的 `AGENTS.local.md`。
+- 本机专属设置（ASR 专用环境、模型快照、推送走哪个 git）不属于通行约定，写在仓库根的 `AGENTS.local.md`（已 gitignore，不进公开仓）。
+
+### 环境变量
+
+三个键可选，缺了只影响对应能力，不影响图文主线。**本仓不自动加载 `.env`**——用 shell 注入（`export`，或 Windows 的 `setx` 后重开终端）。
+
+| 键 | 谁读 | 什么时候需要 |
+|---|---|---|
+| `DEEPSEEK_API_KEY` | `tools/ds_vision.py` | 图片 / 视频画面语义理解 |
+| `OCR_PYTHON` | `tools/extract-image-ocr.py`、`extract-video-frames.py` | RapidOCR 装在独立解释器里时 |
+| `GITHUB_TOKEN` | `tools/check_vendor.py --online` | 未装 `gh` 时避免匿名限流（403） |
 
 ## 参考与许可
 

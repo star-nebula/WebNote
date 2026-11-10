@@ -2,6 +2,11 @@
 step: 5
 executor: 调度器
 context: none
+reads:
+  - runs/<run>/03-核查表.md
+forbidden:
+  - 未经用户逐条确认就执行删除、归档、发布或写入长期记录
+  - 把「建议动作」当成已执行的动作
 writes:
   - runs/<run>/04-待确认提案.md
 produces: 04-待确认提案.md

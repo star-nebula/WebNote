@@ -37,8 +37,6 @@ CAPABILITIES = [
      "pip install faster-whisper"),
     ("视频下载 / 抽帧", "cli", "ffmpeg",
      "Windows: winget install Gyan.FFmpeg | macOS: brew install ffmpeg"),
-    ("小红书笔记拉取", "module", ["requests"],
-     "pip install requests（另需 Cookie）"),
     ("防复制页 / 云文档无损拓存", "web_archive", None,
      "需要 PowerShell 与 Chrome 或 Edge；仅 Windows 脚本链已实现"),
 ]

@@ -93,7 +93,7 @@
 
 **代价**：少了"任意工具读 AGENTS.md 就自动获得角色注册与写入拦截"的能力；写边界退回提示词约束（`agents/verifier.md` 的 `writes/forbidden` + 降级声明）。若将来真的多工具并用，再把注册面按需加回来——它现在是 tarball 之外的一小段 YAML，重写成本很低。
 
-## 2026-11-09 · 长期记忆回到 bot 目录 `memory/`（私有、不进 git）
+## 2026-11-09 · 长期记忆回到 bot 目录 `memory/`（私有、不进 git）——**次日已废除**
 
 **背景**：同一天早些时候刚把 `memory/` 删掉，理由是"索引 0 条、跨 run 结论本来就落知识库"。用户随后明确：记忆要跟着 bot 走，放在 `E:\Projects\bots\WebNote` 里。这两条并不矛盾——删掉的是一个**空壳索引**，现在建的是一个**有内容、且只在本机**的记忆。
 
@@ -107,6 +107,8 @@
 
 **代价**：记忆随仓库走，别人 clone 不到（这是有意的）；换机器要手动搬 `memory/`，与 `AGENTS.md`、`persona/` 同类。
 
+**批注（2026-11-10）**：这条已被推翻——`memory/` 当晚删掉（75 行是别的文档的副本、两份 log 全是「我改了什么」、零条运行故障）。本段提到的 `test_memory_stays_private` 也已删除，同类断言现在由 `test_private_files_stay_untracked` 承担；私有事实的去处是 `AGENTS.local.md`。
+
 ## 2026-11-09 · 旧的两份本机记忆归档（已被上一条修订：记忆回到 `memory/`）
 
 **背景**：仓里还剩两处本机记忆：`.memory/_archive/`（2026-09-13 自称"已入库"，但库里只有 4 条 claim，且它写的库路径（旧库子目录）、项目名 `WebNote-Workflow`、Inbox 登记记录三样都已失效）与 `.workbuddy/memory/`（5 份会话日志 + 一份已实施的设计草案）。
@@ -117,13 +119,15 @@
 
 **配套**：`.gitignore` 只保留 `.workbuddy/`（工具会话会重建，属本机产物），去掉 `.memory/`；`AGENTS.md` 明确"跨 run 结论写知识库，仓内不要存第二份"。
 
-## 2026-11-09 · 新 run 用 `runs/_template/` 空骨架，不动 `examples/`
+## 2026-11-09 · 新 run 用 `runs/_template/` 空骨架，不动 `examples/`——**`examples/` 次日已归档**
 
 **背景**：00–04 五个产物的表头一直靠 SKILL.md 的散文描述 + `examples/` 对照，实际开跑时是 AI 现编表头，列名与分区逐次漂移；`examples/` 又是三态改造前的冻结快照（故意不改），不能当格式基准。
 
 **决定**：新增 `runs/_template/`（五份空骨架，进 git、只读）。`examples/` 保持原样继续冻结。两者分工：模板是空的格式契约，范例是跑完的真实教材。
 
 **理由**：骨架文件比格式卡硬——AI 会直接复制，不需要先读懂规则；`examples/` 挪进 `runs/` 则会撞上 `runs/*` 的忽略规则，且本机已有同名运行目录。
+
+**批注（2026-11-09 晚）**：`examples/` 后来整目录挪到 `docs/history/2026-09-03-two-state-example/`——它不当范例，只当存档：证明的是两态为什么失败，格式本身已过时。
 
 **代价与配套**：
 - `.gitignore` 需要 `!runs/_template/` 与 `!runs/_template/**` 两个例外（否则模板自己被忽略）。
@@ -175,7 +179,7 @@
 
 ## 已知缺陷（接管原 `memory/` 的「未落地」）
 
-- `tools/extract-image-ocr.py` 在 Windows 跨盘符（`C:` ↔ `E:`）时 `os.path.relpath` 抛 `ValueError`；规避方式写在 `steps/branches/image.md`，**代码未修**。
+- ~~`tools/extract-image-ocr.py` 在 Windows 跨盘符时 `os.path.relpath` 抛 `ValueError`~~ —— **已修（2026-11-10）**：该脚本的 `safe_relpath(path, base)` 跨盘符时退回绝对路径。
 - 三态规范缺一份"标准示范"范例；现有 `docs/history/` 是两态时代的存档，`runs/_template/` 是空骨架。有真实多媒体批次时补。
 - `README.en.md` 与 `README.md` 的内容对等性没有断言，靠人维护。
 
@@ -197,3 +201,20 @@
 **补记（同日）**：叠加层第一版其实是整份入口的副本（五步表、目录职责、硬约束、改仓约定都在里面），当天就被用户点出来——"AI 看到『若存在 `AGENTS.local.md`，先读它』时其实整篇已经读完了"。两处修正：①`AGENTS.local.md` 只留私有内容（核心记忆、本机事实、偏好、落库位置、记忆归属、汇报口径），公开项（如"不绕过付费墙"）移进入口；②指针措辞改成"读完本文件后立即读它"，并写明它**不重复任何契约**。防线加了一条断言：叠加层与入口不许出现同名 `## ` 小节（复制粘贴一旦开始，这条就红）。
 
 **补记之二**：`persona/avatar.png` 在 11-09→11-10 的重构里丢失且无人发现（gitignore 文件、零引用、测试只断言"不许被跟踪"、`git status` 永远干净），从归档包恢复后又决定**删掉**——件在仓库里没有任何读取者，留着只会再丢一次。头像留在 `E:\Projects\archive\webnote-agents-local-2026-11-10.tgz` 与 `webnote-role-2026-11-09.tgz` 里备查；`.gitignore` 的 `/persona/`、模板同名规则、README 的 `persona/` 行一并删除。要挂 bot 头像时从归档取。
+
+## 2026-11-10 · 全仓复查：三处「结构与事实不一致」
+
+一次全仓检查找出三类真缺陷，都不是设计问题，是搬迁与裁剪留下的**断言空洞**。
+
+**1. `.env.example` 是一张空头支票。** 它列了 7 个键，代码实际只读 3 个：`XHS_COOKIE` 属于已删的小红书链路，`WHISPER_MODEL` / `KNOWLEDGE_ROOT` / `CHROME_PATH` 没有任何脚本读取（`KNOWLEDGE_ROOT` 只在步骤卡里当约定出现），注释还指着已删的 `tools/extract-xhs.py` 与 `config/default.yaml`。更根本的是**没有任何代码加载 `.env`**（无 dotenv、无 loader），填了也不会生效。决定：删掉该文件，环境变量表写进 `README.md`「开发环境 · 环境变量」（真实存在的三个键 + 谁读 + 什么时候需要），并明说本仓不自动加载 `.env`，用 `export` / `setx` 注入。
+
+**2. `tests/manual/test-web-archive.ps1` 在目录上移后全指错，而且不会有人发现。** `$root = Split-Path -Parent $PSScriptRoot` 是"它在 `tests/` 下"的假设；挪进 `tests/manual/` 后 `$root` 变成 `tests/`，于是 `$scripts` 指向 `tests\skills\web-archive\scripts`、`$fixtures` 指向 `tests\tests\fixtures`，套件根本跑不起来。它不进 CI（要真浏览器），所以静默失效。修法：根往上两级，夹具用 `$PSScriptRoot\fixtures`；并加静态断言（见 3）。
+
+**3. 测试补三条断言，都是今天靠人肉查出来的东西。**
+- `test_documented_paths_exist`：活文档里反引号写的 `skills/` `tools/` `tests/` `docs/` `runs/` 路径必须存在（台账、存档、`_migrations` 豁免）。实测故意写一个 `tools/nope.py` 会红。
+- `test_manual_harness_paths_resolve`：harness 的根推算必须是两级、引用的夹具必须存在、夹具不许有没有用例引用的孤儿。
+- `test_documented_env_keys_are_read`：`README.md` 环境变量表里的键必须有代码读。这条正是 `.env.example` 那种问题的通用形式——**承诺存在的开关比没有开关更糟**。
+
+**顺带清理**：`.gitignore` 里只剩注释的"长期记忆"空段落删掉；`skills/webnote-workflow/SKILL.md` 的 `description` 去掉「小红书链接」（能力已删，留着会让技能被错误触发）；`tools/check-env.py` 移除「小红书笔记拉取」能力项；`skills/image-extract/SKILL.md` 与 `tools/extract-image-ocr.py` 里「XHS JSON」的措辞改成中性说法。
+
+**判据复用**：最终跑一遍不是结论，把「人跑过的检查」变成断言才是。今天三条新测试，每一条都对应一个刚才真实存在过的错误。

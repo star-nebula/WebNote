@@ -1,5 +1,5 @@
 #!/bin/sh
-# push 前跑一遍 CI 的检查（离线、约 3 秒）。任一失败就拦住这次 push。
+# push 前跑一遍 CI 的检查（pytest / 外部技能 / compileall / 链接；离线、约 3 秒）。任一失败就拦住这次 push。
 #
 # 装一次（每个克隆各一次）：
 #   git config core.hooksPath .githooks
@@ -48,12 +48,19 @@ run() {
     fi
 }
 
+skipped=""
 echo "pre-push: 本地检查（python: $py）"
 if "$py" -c 'import pytest' >/dev/null 2>&1; then
     run "pytest" "$py" -m pytest tests -q
 else
     echo "  pytest        SKIPPED（$py 没有 pytest：pip install -r requirements-dev.txt）"
+    skipped="pytest "
 fi
-run "vendored" "$py" tools/check_vendor.py
-run "links" "$py" tools/check-links.py
-echo "pre-push: 通过"
+run "vendored"  "$py" tools/check_vendor.py
+run "compile"   "$py" -m compileall -q tools tests
+run "links"     "$py" tools/check-links.py
+if [ -n "$skipped" ]; then
+    echo "pre-push: 其余检查通过；跳过了：$skipped（CI 上会跑）"
+else
+    echo "pre-push: 通过"
+fi

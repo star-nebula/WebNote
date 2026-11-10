@@ -14,12 +14,12 @@
 | 步 | 文件 | 角色 | 可写 | 上下文 |
 |---|---|---|---|---|
 | 1 采编 | `steps/00-collect.md` | 调度器自己 | `runs/*/00-采编清单.md` | 主会话 |
-| 2 归类 | `steps/01-classify.md` | `classifier` | `runs/*/01-整理清单.md` | `isolated`（建议独立） |
-| 3 提炼 | `steps/02-distil.md` | `distiller` | `runs/*/02-笔记.md` | `isolated`（建议独立） |
-| 4 核查 | `steps/03-verify.md` | `verifier` | `runs/*/03-核查表.md` | `fresh`（必须全新） |
+| 2 归类 | `steps/01-classify.md` | 归类师（`classifier`） | `runs/*/01-整理清单.md` | `isolated`（建议独立） |
+| 3 提炼 | `steps/02-distil.md` | 笔记匠（`distiller`） | `runs/*/02-笔记.md` | `isolated`（建议独立） |
+| 4 核查 | `steps/03-verify.md` | 核查官（`verifier`） | `runs/*/03-核查表.md` | `fresh`（必须全新） |
 | 5 确认 | `steps/04-confirm.md` | 调度器自己 | `runs/*/04-待确认提案.md` | 主会话 |
 
-路径相对 `skills/webnote-workflow/`。每个文件头部的 frontmatter 是契约（`context` / `reads` / `writes` / `forbidden` / `produces` / `format_needles`），按它执行。
+文件路径相对 `skills/webnote-workflow/`；`reads` / `writes` / `produces` 里的路径相对仓库根。frontmatter 是契约：`step` / `executor` / `context` / `reads` / `writes` / `forbidden` 决定怎么跑（`reads` 允许写自然语言约束），`produces` / `format_needles` 供 `runs/_template/` 逐条比对。
 
 **技能**——开工先读对应 `SKILL.md`（只做路由；细则放同目录的 `steps/` 或 `references/`）：
 
@@ -30,7 +30,7 @@
 
 **外部技能**（真源不在本仓，读可以，别改内容）：
 
-- `skills/browser-skill` ← https://github.com/Tencent/BrowserSkill @ `e380cbc`（快照 2026-11-09，`SKILL.md` + `references/`；来源与刷新见 `bot.yaml` 的 `vendored:`）
+- `skills/browser-skill` ← https://github.com/Tencent/BrowserSkill（`SKILL.md` + `references/`）。**代际、快照日期、文件数与刷新命令只记在 `bot.yaml` 的 `vendored:` 一处**，这里不再抄，抄了就会过期。
 
 **产出格式**：定义在各个 `steps/0N-*.md` 的 `format_needles` 里；`runs/_template/` 是与之逐条一致的空骨架。起新 run 整目录复制，表头不改。
 
@@ -93,10 +93,10 @@
 2. 新增媒体能力：脚本进 `tools/`，并在 `tools/check-env.py` 登记「缺什么、怎么补」。
 3. **改产出格式要动两处**：`runs/_template/<文件>` 与对应步骤文件的 `format_needles`；`test_template_matches_step_card` 会比对，只改一边就红（其余位置自动跟随，不要另抄）。
 4. 改流程：同步更新 `steps/`、`README.md` 的能力表、受影响技能，以及本文件；改完跑 `python -m pytest tests -q`（`pre-push` 钩子会自动跑同一套）。
-5. 环境变量只把**键名**写进 `.env.example`，真值放 `.env`（已 gitignore）；任何真实路径、Cookie、Key 不进公开文件。
+5. 环境变量用 shell 注入（`export` / Windows `setx`）；本仓**不自动加载** `.env`，也不要提交任何真实值。键名清单见 `README.md` 的「环境变量」。
 6. 不提交生成物与本机状态：`runs/`、`.workbuddy/`、`.venv-asr/`、临时音视频。
 7. **运行异常要留痕**：每次运行把工具失败、参数踩坑、人工补救写进该 run 的 `00-采编清单.md`「运行异常」节；同一异常出现第二次，就升级成一条测试或一条 `docs/decisions.md`，别留在 run 里自生自灭。
-8. **本仓是公开仓**：只提交脱敏内容。私有路径、账号、密钥写在 `AGENTS.local.md` 或 `.env`（都已 gitignore），不进本文件。
+8. **本仓是公开仓**：只提交脱敏内容。私有路径、账号、密钥写在 `AGENTS.local.md`（已 gitignore），不进本文件。
 
 ## 边界
 

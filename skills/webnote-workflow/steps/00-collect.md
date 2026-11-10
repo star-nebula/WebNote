@@ -2,6 +2,11 @@
 step: 1
 executor: 调度器
 context: none
+reads:
+  - 用户给定的 URL / 本地文件 / 浏览器剪藏
+forbidden:
+  - 改写、移动或删除原始输入
+  - 绕过付费墙或登录墙
 writes:
   - runs/<run>/00-采编清单.md
 produces: 00-采编清单.md
@@ -39,6 +44,7 @@ format_needles:
 | 文档 | `extract-document.py <文件路径>` | — |
 | 图片 | OCR →（可选）Vision | [branches/image.md](branches/image.md) |
 | 视频 / 音频 | 页面文本 → ASR → 画面 | [branches/video-audio.md](branches/video-audio.md) |
+| 防复制页 / 云文档 / 登录墙长文 | PowerShell + Chrome 链无损拓存 | [branches/web-archive.md](branches/web-archive.md) |
 | 无法判断 | `extract-webpage.py <URL>` 尽力读取 | — |
 
 **只加载命中的分支卡。** 处理一个 PDF 时不需要知道 ASR 怎么跑。

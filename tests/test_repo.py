@@ -114,10 +114,9 @@ def test_template_matches_step_card(path):
     fm = frontmatter(path)
     needles = fm.get("format_needles") or []
     assert needles, f"{path.name} 没有 format_needles（产出格式无处定义）"
-    src = read(path)
+    assert len(needles) == len(set(needles)), f"{path.name} 的 format_needles 有重复项"
     tpl = read(ROOT / TEMPLATE_DIR / fm["produces"])
     for needle in needles:
-        assert needle in src, f"{path.name} 自己缺 {needle!r}"
         assert needle in tpl, f"runs/_template/{fm['produces']} 缺 {needle!r}（规范改了，模板要一起改）"
 
 
@@ -195,6 +194,21 @@ def test_no_legacy_paths():
     assert not hits, "旧结构残留：\n" + "\n".join(hits)
 
 
+def test_role_names_have_one_wording():
+    """每个步骤里的 role 必须在 AGENTS.md 里以同一个词出现。
+
+    曾经同一个角色有三种叫法：契约里 `classifier`、流水线表里「归类师」、
+    步骤文件里「内容分类员」——读的人得先猜它们是不是同一个。
+    """
+    agents = read(ROOT / "AGENTS.md")
+    missing = [
+        f"{p.name}: role={frontmatter(p).get('role')!r}"
+        for p in step_files()
+        if frontmatter(p).get("role") and frontmatter(p)["role"] not in agents
+    ]
+    assert not missing, "AGENTS.md 里的角色名与步骤文件不一致：\n" + "\n".join(missing)
+
+
 def test_vendored_skill_is_a_real_copy():
     """外部技能必须是真副本：真目录、无链接、只此一份，不经本地中转。"""
     vendored = ROOT / "skills/browser-skill"
@@ -221,6 +235,59 @@ def test_vendored_manifest_records_upstream():
         assert not any(p.is_symlink() for p in path.rglob("*")), f"{where} 里不该有符号链接"
         actual = len([p for p in path.rglob("*") if p.is_file()])
         assert v.get("files") == actual, f"{where} 记了 {v.get('files')} 个文件，实际 {actual}（跑 --pull 修）"
+
+
+def test_steps_declare_boundaries():
+    """每个步骤文件都要声明读什么、不许做什么；写下的仓库路径必须真的存在。
+
+    曾经只有 01–03 有 reads/forbidden，00 与 04 空着——契约表看着齐，实际缺一半。
+    """
+    never = ["00-collect.md", "01-classify.md", "02-distil.md", "03-verify.md", "04-confirm.md"]
+    problems = []
+    for name in never:
+        fm = frontmatter(ROOT / STEPS_DIR / name)
+        for key in ("reads", "forbidden", "writes"):
+            if not fm.get(key):
+                problems.append(f"{name} 缺 {key}")
+        for item in fm.get("reads") or []:
+            item = str(item)
+            if item.startswith(("skills/", "docs/", "tools/")):
+                if not (ROOT / item).exists():
+                    problems.append(f"{name} 的 reads 指向不存在的路径：{item}")
+            elif item.startswith("runs/<run>/"):
+                if not (ROOT / TEMPLATE_DIR / Path(item).name).is_file():
+                    problems.append(f"{name} 的 reads 读不到对应产出：{item}")
+    assert not problems, "步骤契约不完整：\n" + "\n".join(problems)
+
+
+def test_branches_are_ordered_and_reachable():
+    """采编分支卡靠 branch_of + order 排序，且必须从 00 指得到——否则是一堆孤儿文件。"""
+    branches = sorted((ROOT / STEPS_DIR / "branches").glob("*.md"))
+    assert branches, "steps/branches/ 为空"
+    orders = []
+    src = read(ROOT / STEPS_DIR / "00-collect.md")
+    for p in branches:
+        fm = frontmatter(p)
+        where = p.relative_to(ROOT).as_posix()
+        assert fm.get("branch_of") == "00-collect", f"{where} 的 branch_of 必须指向 00-collect"
+        assert isinstance(fm.get("order"), int), f"{where} 缺整数 order"
+        orders.append(fm["order"])
+        assert p.name in src, f"00-collect.md 没有指向分支卡 {p.name}（孤儿）"
+    assert orders == list(range(1, len(branches) + 1)), f"分支 order 应为 1..{len(branches)}，实际 {orders}"
+
+
+def test_vendored_generation_lives_in_one_place():
+    """上游代际只记在 bot.yaml。文档里再抄一份 commit sha，就一定会过期（已经发生过一次）。"""
+    hits = []
+    for p in tracked_files():
+        rel = p.relative_to(ROOT).as_posix()
+        if p.suffix != ".md" or rel in {"bot.yaml", "docs/decisions.md"}:
+            continue
+        if rel.startswith(("docs/history/", "docs/versions/", "tools/_migrations/")):
+            continue
+        for m in re.findall(r"\b[0-9a-f]{40}\b", read(p)):
+            hits.append(f"{rel}: {m[:12]}…")
+    assert not hits, "上游代际只能写在 bot.yaml：\n" + "\n".join(hits)
 
 
 @pytest.mark.parametrize("name", ["browser-skill"])
@@ -251,3 +318,61 @@ def test_entry_is_public_and_overlay_stays_private():
         clash = headings(read(ROOT / "AGENTS.md")) & headings(read(overlay))
         assert not clash, f"AGENTS.local.md 不该复述入口的小节：{sorted(clash)}"
 
+# 台账与存档按规矩保留原样，其中的旧路径是历史事实
+DOC_PATH_EXEMPT = ("docs/decisions.md", "docs/history/", "docs/versions/", "tools/_migrations/")
+
+
+def test_documented_paths_exist():
+    """活文档里用反引号写的仓库路径必须存在。
+
+    2026-11-10 手工核过一次：除了台账与存档，其余都成立——但那是人肉查的，
+    目录一旦上移（`tests/fixtures` → `tests/manual/fixtures`）就会静默指错。
+    """
+    pat = re.compile(r"`((?:skills|tools|tests|docs|runs)/[^`\s]*)`")
+    hits = []
+    for p in tracked_files():
+        rel = p.relative_to(ROOT).as_posix()
+        if p.suffix != ".md" or rel.startswith(DOC_PATH_EXEMPT):
+            continue
+        for token in pat.findall(read(p)):
+            cand = token.rstrip("/")
+            if any(ch in cand for ch in "*<>{}"):
+                continue
+            if not (ROOT / cand).exists():
+                hits.append(f"{rel}: {cand}")
+    assert not hits, "文档提到不存在的路径：\n" + "\n".join(sorted(set(hits)))
+
+
+def test_manual_harness_paths_resolve():
+    """`tests/manual/` 的 PowerShell 回归靠 `$PSScriptRoot` 反推仓库根；上移一层就会全指错。
+
+    它不进 CI（要真浏览器），所以路径错了没人会红——只能靠静态断言兜住。
+    """
+    ps1 = ROOT / "tests/manual/test-web-archive.ps1"
+    text = read(ps1)
+    assert "$root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)" in text, \
+        "harness 在 tests/manual/ 下，仓库根要往上两级"
+    assert (ROOT / "skills/web-archive/scripts/harvest.ps1").is_file()
+
+    fixtures = ROOT / "tests/manual/fixtures"
+    used = set(re.findall(r"File\s*=\s*'([^']+\.html)'", text))
+    used |= set(re.findall(r"Join-Path \$fixtures '([^']+\.html)'", text))
+    assert used, "没解析到任何夹具引用（正则失效？）"
+    missing = sorted(n for n in used if not (fixtures / n).is_file())
+    assert not missing, f"harness 引用了不存在的夹具：{missing}"
+
+    present = {p.name for p in fixtures.glob("*.html")}
+    assert not (present - used), f"夹具存在但没被任何用例引用：{sorted(present - used)}"
+
+
+def test_documented_env_keys_are_read():
+    """README 环境变量表里列出的键，必须有代码真的读它。
+
+    `.env.example` 曾经列了 7 个键，其中 4 个代码从不读取，还有 1 个属于已删功能——
+    承诺存在的开关比没有开关更糟。
+    """
+    keys = set(re.findall(r"^\| `([A-Z_][A-Z0-9_]*)` \|", read(ROOT / "README.md"), re.M))
+    assert keys, "README 里没找到环境变量表"
+    code = "\n".join(read(p) for p in tracked_files() if p.suffix in {".py", ".ps1"})
+    missing = sorted(k for k in keys if k not in code)
+    assert not missing, f"README 承诺这些环境变量有效，但没有代码读取：{missing}"

@@ -28,7 +28,7 @@ export DEEPSEEK_API_KEY="sk-xxx"
 
 # 1) 本地 OCR：逐字文字（纯本地，无 Key 也能用）
 python tools/extract-image-ocr.py --images img1.png img2.jpg      # 指定图片
-python tools/extract-image-ocr.py --input <图片目录|JSON>          # 目录或 XHS JSON
+python tools/extract-image-ocr.py --input <图片目录|JSON>          # 目录或清单 JSON
 
 # 2) 云端 Vision：画面语义理解（可选，需 Key）
 python tools/ds_vision.py img1.png img2.jpg --mode image
