@@ -118,6 +118,7 @@ AI 出提案，你按确认键。判据：**这个动作错了，撤得回来吗
 
 ## 本地环境约定（本机，不影响他人）
 
+- **测试依赖有声明**：`pip install -r requirements-dev.txt`（只有 `pytest` 与 `PyYAML`；工具本身以标准库为主）。CI 用它做缓存 key。
 - **ASR 用专用环境**：`.venv-asr`（Python 3.11 + faster-whisper + yt-dlp），已 gitignore。系统 Python 3.13 没有 `faster_whisper`，直接跑会 `ModuleNotFoundError`。
 - **模型走本地快照**：默认 `large-v3`，由 `resolve_model_dir()` 从 HuggingFace 缓存解析后传给 `WhisperModel`；只写模型名会联网校验，`large-v3-turbo` 上游已私有化，按名加载会 401。
 - **git 推送走 Windows 侧**：WSL 里可能没有 ssh 密钥，`git push` 会卡在 publickey。
