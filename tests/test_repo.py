@@ -461,6 +461,13 @@ def test_naming_defaults_to_the_title():
     assert "三者缺一不可" not in confirm, "旧的「标题-作者-平台 三者缺一不可」规则应已废止"
 
 
+def test_entry_leaks_no_downstream_intent():
+    """入口只说到 runs/ 为止：出现落库目录名，等于把"之后要做什么"写进公开文件。"""
+    entry = read(ROOT / "AGENTS.md")
+    for kw in ("Resources", "Knowledge", "落库"):
+        assert kw not in entry, f"AGENTS.md 不该出现下游意图：{kw}（这些归 AGENTS.local.md）"
+
+
 def test_post_runs_rules_live_in_the_overlay():
     """入口只记到 runs/ 为止；落库命名与 Knowledge 原子化属于 runs 之后，写进叠加层。"""
     confirm = read(ROOT / STEPS_DIR / "03-confirm.md")
