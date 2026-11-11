@@ -36,6 +36,8 @@
 
 **分类不是本仓定的**：每个用户对网页内容的类目体系都不同，所以没有固定的「分类步骤」。去向在 `steps/03-confirm.md` 里决定，顺序是：用户 `AGENTS.local.md` 的「分类体系」段 → 知识库现有目录名 → 两者都没有才用兜底四类（学习 / 借鉴 / 内容补充 / 可归档）。
 
+**本仓只负责到 `runs/` 为止**：落库命名、写进 `Resources` 的具体动作、从 `Resources` 提炼原子笔记到 `Knowledge`，都属于 `runs/` 之后的约定，写在 `AGENTS.local.md`。
+
 文件路径相对 `skills/webnote-workflow/`；`reads` / `writes` / `produces` 里的路径相对仓库根。frontmatter 是契约：`step` / `executor` / `context` / `reads` / `writes` / `forbidden` 决定怎么跑（`reads` 允许写自然语言约束），`produces` / `format_needles` 供 `runs/_template/` 逐条比对。
 
 **技能**——开工先读对应 `SKILL.md`（只做路由；细则放同目录的 `steps/` 或 `references/`）：

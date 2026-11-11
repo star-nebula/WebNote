@@ -452,12 +452,23 @@ def test_original_text_copy_is_source_of_truth():
     assert "不要去重抓" in read(ROOT / STEPS_DIR / "01-distil.md"), "01-distil.md 必须禁止重抓网页"
 
 
-def test_landing_name_rule_is_defined():
-    """落库命名规则：标题 + 作者 + 平台，且只约束 Resources。"""
+def test_naming_defaults_to_the_title():
+    """默认用原标题；作者/平台只在重名时才加，且重名不许停下来问。"""
     confirm = read(ROOT / STEPS_DIR / "03-confirm.md")
-    for kw in ("<标题>", "<作者>", "<平台>", "Resources"):
-        assert kw in confirm, f"03-confirm.md 的落库命名缺 {kw}"
-    assert "Knowledge" in confirm, "03-confirm.md 必须说明 Knowledge 不适用这条命名"
+    assert "直接用原标题" in confirm, "03-confirm.md 必须规定默认用原标题命名"
+    assert "重名" in confirm, "03-confirm.md 必须说明只有重名时才追加作者与平台"
+    assert "重名不停下来问用户" in confirm, "重名应自动升级命名，不许再用提问阻塞"
+    assert "三者缺一不可" not in confirm, "旧的「标题-作者-平台 三者缺一不可」规则应已废止"
+
+
+def test_post_runs_rules_live_in_the_overlay():
+    """入口只记到 runs/ 为止；落库命名与 Knowledge 原子化属于 runs 之后，写进叠加层。"""
+    confirm = read(ROOT / STEPS_DIR / "03-confirm.md")
+    entry = read(ROOT / "AGENTS.md")
+    assert "AGENTS.local.md" in confirm, "03-confirm.md 必须把 runs 之后的约定指给 AGENTS.local.md"
+    assert "AGENTS.local.md" in entry, "AGENTS.md 必须说明 runs 之后的约定在叠加层"
+    assert "只负责到" in entry and "runs/" in entry, \
+        "AGENTS.md 必须写明本仓只负责到 runs/ 为止"
 
 
 def test_run_archive_dir_is_tracked():
