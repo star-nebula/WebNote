@@ -57,6 +57,8 @@ else
     skipped="pytest "
 fi
 run "vendored"  "$py" tools/check_vendor.py
+# runs/ 是 gitignore 的，CI 里没有可校验的 run；本机有就顺手校验一遍（没有则秒过）
+run "runs"      "$py" tools/validate_run.py --all
 run "compile"   "$py" -m compileall -q tools tests
 run "links"     "$py" tools/check-links.py
 if [ -n "$skipped" ]; then

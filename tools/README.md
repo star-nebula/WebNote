@@ -55,6 +55,14 @@
 | `check-env.py` | 当前机器能跑哪些媒体分支、缺什么怎么补 | 无 | 否 |
 | `check-links.py` | 全仓 Markdown 相对链接 | 无 | 是 |
 | `check_vendor.py [--online]` | 外部技能副本是否还是上游那份 | `gh` 或 `GITHUB_TOKEN`（仅 --online） | 是（离线） |
+| `validate_run.py [--all\|runs/<run>/]` | 一份 run 的四份产物是否自洽：条数、条目号连续、三态与来源类型组合、提案是否把每条都归了节 | 无 | 是（CI 里没有 runs/，秒过） |
+
+两个纯函数模块，被工具和测试共同引用，不要各写一份：
+
+| 模块 | 提供什么 | 为什么单独存在 |
+|---|---|---|
+| `naming.py` | `landing_name()`：三档升级（原标题 → 加作者与平台 → 加日期）、非法字符净化 | 落库命名是唯一会碰到真实文件的规则，写错了要么覆盖笔记、要么生成 Windows 不接受的名字 |
+| `safe_path.py` | `safe_relpath()`：同盘给相对路径，跨盘退化为文件名 | `os.path.relpath` 跨盘符抛 `ValueError`，2026-11 真崩过一次 |
 
 `_migrations/` 里是已跑过的一次性脚本，不进运行时。
 

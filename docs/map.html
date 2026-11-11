@@ -231,7 +231,7 @@
   </div>
 </div>
 
-<h2>四道闸 · 谁在什么时候检查什么</h2>
+<h2>五道闸 · 谁在什么时候检查什么</h2>
 <div class="gates">
   <div class="gate-c">
     <div class="t">写代码时</div>
@@ -239,6 +239,7 @@
     <ul>
       <li>pytest</li>
       <li>check_vendor（离线）</li>
+      <li>validate_run --all</li>
       <li>compileall</li>
       <li>check-links</li>
     </ul>
@@ -253,13 +254,24 @@
     </ul>
   </div>
   <div class="gate-c">
-    <div class="t">每次跑流程</div>
-    <div class="big">测试 22 条</div>
+    <div class="t">每份提案写完</div>
+    <div class="big">validate_run</div>
+    <ul>
+      <li>条数：正文 ↔ 核查表 ↔ 汇总</li>
+      <li>条目号连续、每条都有出处</li>
+      <li>转述源不许升格成直接引用</li>
+      <li>提案把每条都归了节</li>
+      <li>只查结构，不查真假</li>
+    </ul>
+  </div>
+  <div class="gate-c">
+    <div class="t">改结构时</div>
+    <div class="big">测试 77 条</div>
     <ul>
       <li>模板 ↔ format_needles</li>
       <li>私有路径与旧结构不回来</li>
-      <li>文档写的路径真存在</li>
-      <li>承诺的环境变量真被读</li>
+      <li>校验器自己抓得住注入的错</li>
+      <li>命名与跨盘路径的边界</li>
     </ul>
   </div>
   <div class="gate-c">

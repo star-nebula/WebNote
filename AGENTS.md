@@ -129,4 +129,5 @@
 - `python tools/check-env.py` —— 当前机器能跑哪些媒体分支
 - `python tools/check-links.py` —— 全仓 Markdown 相对链接
 - `python tools/check_vendor.py` —— 外部技能副本是否还是上游那份（`--online` 才联网）
-- `python -m pytest tests -q` —— 仓库不变量（表头契约、泄漏扫描、外部技能完整性）
+- `python tools/validate_run.py --all` —— 手上的 run 四份产物是否自洽（条数、条目号、三态组合）
+- `python -m pytest tests -q` —— 仓库不变量（表头契约、泄漏扫描、外部技能完整性、校验器自身正确性）

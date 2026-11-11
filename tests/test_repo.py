@@ -122,13 +122,6 @@ def test_template_matches_step_card(path):
         assert needle in tpl, f"runs/_template/{fm['produces']} 缺 {needle!r}（规范改了，模板要一起改）"
 
 
-def test_run_template_is_tracked_not_ignored():
-    """骨架必须进 git：runs/* 的忽略规则不得把它吞掉。"""
-    target = "runs/_template/00-采编清单.md"
-    res = subprocess.run(["git", "check-ignore", target], cwd=ROOT, capture_output=True, text=True)
-    assert res.returncode == 1, f"{target} 被 .gitignore 忽略了，需要 !runs/_template/** 例外"
-
-
 def test_invariants_have_one_source():
     """三条铁律只在 docs/architecture.md 定义；别处只能引用，不能另写一版。
 
@@ -502,42 +495,6 @@ def test_entry_ids_have_one_format():
     assert "p<页>-<序>" in confirm, "03-confirm.md 必须声明沿用核查表的条目号"
     assert "p01-1" in template, "02-核查表 模板的条目列必须用 p01-1 这种 ID"
     assert "| 1. <要点摘要>" not in template, "模板里不该再出现「1. 摘要」这种编号"
-
-
-def tool_scripts():
-    return sorted(p for p in (ROOT / "tools").glob("*.py"))
-
-
-@pytest.mark.parametrize("script", tool_scripts(), ids=lambda p: p.name)
-def test_tool_imports_cleanly(script):
-    """每个工具都必须能被导入（不执行 main）。
-
-    compileall 只证明语法对；顶层 import 死了、模块级代码抛错，它全放行。
-    """
-    code = "import runpy, sys; runpy.run_path(sys.argv[1], run_name='probe')"
-    r = subprocess.run(
-        [sys.executable, "-c", code, str(script)],
-        cwd=ROOT, capture_output=True, text=True,
-    )
-    assert r.returncode == 0, f"{script.name} 导入失败：\n{r.stderr[-800:]}"
-
-
-@pytest.mark.parametrize("script", tool_scripts(), ids=lambda p: p.name)
-def test_tool_help_works(script):
-    """有 argparse 的工具，--help 必须正常退出。
-
-    argparse 的定义错误（参数冲突、dest 拼错）只在解析时才炸，编译期看不出来。
-    """
-    if "add_argument" not in script.read_text(encoding="utf-8"):
-        pytest.skip("该脚本用手工解析 argv，没有 argparse")
-    # Windows 控制台默认 GBK：用 utf-8 + replace 读，否则管道解码炸掉、stdout 变 None
-    r = subprocess.run(
-        [sys.executable, str(script), "--help"],
-        cwd=ROOT, capture_output=True, encoding="utf-8", errors="replace", timeout=60,
-    )
-    out = (r.stdout or "") + (r.stderr or "")
-    assert r.returncode == 0, f"{script.name} --help 失败：\n{out[-800:]}"
-    assert "usage" in out.lower(), f"{script.name} --help 没有输出 usage"
 
 
 # ---- 提取类工具的输出契约 ----

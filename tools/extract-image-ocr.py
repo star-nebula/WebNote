@@ -30,6 +30,9 @@ import json
 import os
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from safe_path import safe_relpath  # noqa: E402  跨盘路径的唯一实现
+
 IMAGE_EXTS = ('.png', '.jpg', '.jpeg', '.bmp', '.webp')
 
 
@@ -63,14 +66,6 @@ def collect_images(args):
         return sorted(paths), inp
 
     return [], os.getcwd()
-
-
-def safe_relpath(path, base):
-    """跨盘安全的相对路径：同盘给相对路径，异盘退化为文件名（relpath 跨盘会抛 ValueError）。"""
-    try:
-        return os.path.relpath(path, base).replace('\\', '/')
-    except ValueError:
-        return os.path.basename(path)
 
 
 def main():

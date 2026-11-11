@@ -84,6 +84,9 @@ WebNote/
 │   ├── check-env.py      #   environment self-check
 │   ├── check-links.py    #   relative Markdown links
 │   ├── check_vendor.py   #   is the vendored copy still the upstream one (--pull to refresh)
+│   ├── validate_run.py   #   are the four artifacts of one run mutually consistent
+│   ├── naming.py         #   landing-file naming, three-step escalation (one implementation)
+│   ├── safe_path.py      #   cross-drive relative paths (one implementation)
 │   └── extract-*.py      #   document / web / video / image extraction
 ├── tests/                # repo invariants (CI)
 │   └── manual/           #   real-browser regressions + offline fixtures (not in CI)
@@ -92,7 +95,7 @@ WebNote/
 │   ├── decisions.md      # decision log
 │   ├── versions/         # published earlier versions (text kept as published)
 │   └── history/          # archive: obsolete formats, kept only to explain where rules came from
-├── .github/workflows/    # CI: pytest → vendored skill → compileall → links
+├── .github/workflows/    # CI: pytest → vendored skill → run validation → compileall → links
 ├── .githooks/pre-push    # local pre-push self-check (see below)
 ├── .gitattributes        # no text conversion for the vendored copy (--online relies on it)
 ├── requirements-dev.txt  # pytest and PyYAML only
@@ -125,7 +128,7 @@ The AI produces a proposal; you press the key. The test: **if this action is wro
 ## Development environment
 
 - **Test dependencies are declared**: `pip install -r requirements-dev.txt` (only `pytest` and `PyYAML`; the tools themselves are mostly standard library). CI uses it as the cache key.
-- **Pre-push self-check**: run `git config core.hooksPath .githooks` once; every push then runs pytest / vendored-skill / link checks first (about 3 seconds, offline). Skip with `git push --no-verify` when in a hurry.
+- **Pre-push self-check**: run `git config core.hooksPath .githooks` once; every push then runs pytest / vendored-skill / run validation / compileall / link checks first (about 3 seconds, offline). Skip with `git push --no-verify` when in a hurry.
 - Machine-specific settings (dedicated ASR venv, local model snapshots, which git binary is used for pushing) are not part of the shared contract; they live in the untracked `AGENTS.local.md`.
 
 ### Environment variables

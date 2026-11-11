@@ -84,6 +84,9 @@ WebNote/
 │   ├── check-env.py      #   环境自检
 │   ├── check-links.py    #   Markdown 相对链接
 │   ├── check_vendor.py   #   外部技能副本是否还是上游那份（--pull 升版）
+│   ├── validate_run.py   #   一份 run 的四份产物是否自洽
+│   ├── naming.py         #   落库命名三档升级（唯一实现）
+│   ├── safe_path.py      #   跨盘相对路径（唯一实现）
 │   └── extract-*.py      #   文档 / 网页 / 视频 / 图片 提取
 ├── tests/                # 仓库不变量（进 CI）
 │   └── manual/           #   需要真实浏览器的回归 + 离线夹具（不进 CI）
@@ -92,7 +95,7 @@ WebNote/
 │   ├── decisions.md      # 决策记录
 │   ├── versions/         # 已发表旧版（正文原样）
 │   └── history/          # 历史存档：格式已废弃，只用来解释规则来由
-├── .github/workflows/    # CI：pytest → 外部技能 → compileall → 链接
+├── .github/workflows/    # CI：pytest → 外部技能 → run 校验 → compileall → 链接
 ├── .githooks/pre-push    # 推送前本地自检（见「开发环境」）
 ├── .gitattributes        # 外部技能副本关行尾转换（--online 比对依赖）
 ├── requirements-dev.txt  # 只有 pytest 与 PyYAML
@@ -125,7 +128,7 @@ AI 出提案，你按确认键。判据：**这个动作错了，撤得回来吗
 ## 开发环境
 
 - **测试依赖有声明**：`pip install -r requirements-dev.txt`（只有 `pytest` 与 `PyYAML`；工具本身以标准库为主）。CI 用它做缓存键。
-- **push 前本地自检**：`git config core.hooksPath .githooks`，之后每次 push 会先跑 pytest / 外部技能 / 链接检查（约 3 秒，离线）。急用时 `git push --no-verify` 跳过。
+- **push 前本地自检**：`git config core.hooksPath .githooks`，之后每次 push 会先跑 pytest / 外部技能 / run 校验 / compileall / 链接检查（约 3 秒，离线）。急用时 `git push --no-verify` 跳过。
 - 本机专属设置（ASR 专用环境、模型快照、推送走哪个 git）不属于通行约定，写在仓库根的 `AGENTS.local.md`（已 gitignore，不进公开仓）。
 
 ### 环境变量

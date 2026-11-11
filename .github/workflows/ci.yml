@@ -25,6 +25,9 @@ jobs:
       - name: 外部技能来源与完整性（离线，不联网）
         run: python tools/check_vendor.py
 
+      - name: run 产物自洽（本机运行时用；CI 上没有 runs/，秒过）
+        run: python tools/validate_run.py --all
+
       - name: Python 语法检查
         run: python -m compileall -q tools tests
 
