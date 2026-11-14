@@ -16,6 +16,10 @@ runs/_archive/*
 # .workbuddy/ 由 WorkBuddy 自己创建；记忆本体在知识库 Projects/WebNote/，不在仓里
 .workbuddy/
 
+# ===== 本机 Agent 装配：技能 junction，不入仓 =====
+/.claude/skills/
+/.agents/skills/
+
 # ===== 系统 / 编辑器杂项 =====
 .DS_Store
 Thumbs.db
@@ -38,3 +42,6 @@ __pycache__/
 # ===== 私有入口与角色原始件：只在本机 =====
 # 入口 AGENTS.md 进 git（工具按这个名字加载）；本机叠加层 AGENTS.local.md 不进
 /AGENTS.local.md
+# 本机软链，指向知识库里的全局指令文件；提交一个指向私人库的链接，
+# 别人 clone 下来会落成失效文件，还会盖住仓里真正被加载的 AGENTS.md
+/CLAUDE.md
