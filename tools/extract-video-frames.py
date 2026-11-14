@@ -12,15 +12,19 @@ Agent 0 · 采编 — 视频画面采集工具（抽帧 + OCR + Vision）
        → 时间戳对齐 → 统一 JSON + Markdown
 
 用法：
-  DEEPSEEK_API_KEY=sk-xxx python extract-video-frames.py --input <视频文件>
+  python extract-video-frames.py --input <视频文件>
        [--out <输出JSON路径>] [--max-frames N] [--detail high]
        [--t-start S] [--t-end S] [--ocr-python <RapidOCR解释器>]
        [--keep-frames]        # 保留抽帧目录（默认临时目录用完即删）
 
+视觉通道（二选一，自动）：
+  - 本机 magpie 网关：http://127.0.0.1:3425/v1（默认，模型 open-design/deepseek-v4-flash-vision-exp）
+  - DeepSeek 官方 API：DEEPSEEK_API_KEY=sk-xxx
+
 依赖：
   - ffmpeg（系统已装）
   - RapidOCR（建议在独立 venv：pip install rapidocr-onnxruntime）
-  - DeepSeek API Key（环境变量 DEEPSEEK_API_KEY）
+  - 视觉通道：magpie 网关，或 DEEPSEEK_API_KEY
 
 输出 JSON 到 stdout（通用契约 + 扩展）：
   {"success": true, "text": "<Markdown>", "char_count": N,
@@ -34,6 +38,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import urllib.request
 
 # 本工具目录
 TOOLS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -234,6 +239,21 @@ def vision_all(frame_paths, ocr_python=None):
     return out
 
 
+def vision_channel_available():
+    """有官方 Key，或本机 magpie 网关在跑，就算有视觉通道。"""
+    if os.environ.get("DEEPSEEK_API_KEY"):
+        return True
+    base = os.environ.get("MAGPIE_BASE_URL", "http://127.0.0.1:3425/v1").rstrip("/")
+    try:
+        req = urllib.request.Request(
+            base + "/models", headers={"Authorization": "Bearer magpie"})
+        with urllib.request.urlopen(req, timeout=3) as r:
+            json.loads(r.read().decode())
+        return True
+    except Exception:
+        return False
+
+
 def build_markdown(frames, ocr_map, vision_map, t_start, t_end, method):
     lines = []
     lines.append("# 视频画面理解")
@@ -303,10 +323,10 @@ def main():
                 "error": "未找到 RapidOCR 解释器，请用 --ocr-python 指定"}
         print(json.dumps(fail, ensure_ascii=False)); sys.exit(1)
 
-    # 校验 Key
-    if not os.environ.get("DEEPSEEK_API_KEY"):
+    # 校验视觉通道：本机 magpie 网关，或官方 API Key
+    if not vision_channel_available():
         fail = {"success": False, "text": "", "char_count": 0, "method": "error",
-                "error": "未设置 DEEPSEEK_API_KEY 环境变量"}
+                "error": "没有可用的视觉通道：magpie 网关未运行，也未设 DEEPSEEK_API_KEY"}
         print(json.dumps(fail, ensure_ascii=False)); sys.exit(1)
 
     # 时长

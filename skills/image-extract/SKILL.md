@@ -1,6 +1,6 @@
 ---
 name: image-extract
-description: 从图片中提取"内容"（OCR 逐字文字 + 画面语义理解）。当用户提供一张或多张图片（截图、海报、文档扫描、UI 界面等），需要"图片里有什么文字 + 图片在讲什么内容/场景"时使用。纯本地 OCR（RapidOCR）管文字，可选云端 DeepSeek Vision 管画面语义。依赖：RapidOCR、DEEPSEEK_API_KEY（语义部分）。
+description: 从图片中提取"内容"（OCR 逐字文字 + 画面语义理解）。当用户提供一张或多张图片（截图、海报、文档扫描、UI 界面等），需要"图片里有什么文字 + 图片在讲什么内容/场景"时使用。纯本地 OCR（RapidOCR）管文字，可选云端 DeepSeek Vision 管画面语义。依赖：RapidOCR；画面语义走本机 magpie 网关，或 DEEPSEEK_API_KEY。
 agent_created: true
 ---
 
@@ -23,14 +23,14 @@ agent_created: true
 ## 直接用内置工具
 
 ```bash
-# 前置（仅语义部分需要 Key）
-export DEEPSEEK_API_KEY="sk-xxx"
+# 前置：画面语义默认走本机 magpie 网关（无需 Key）
+# 网关不可用时才用官方通道：export DEEPSEEK_API_KEY="sk-xxx"
 
 # 1) 本地 OCR：逐字文字（纯本地，无 Key 也能用）
 python tools/extract-image-ocr.py --images img1.png img2.jpg      # 指定图片
 python tools/extract-image-ocr.py --input <图片目录|JSON>          # 目录或清单 JSON
 
-# 2) 云端 Vision：画面语义理解（可选，需 Key）
+# 2) 云端 Vision：画面语义理解（可选；magpie 网关或 Key）
 python tools/ds_vision.py img1.png img2.jpg --mode image
 
 # 组合：OCR 文字 + Vision 语义
@@ -55,6 +55,6 @@ python tools/ds_vision.py img1.png img2.jpg --mode image
 
 ## 经验与坑
 
-- **Key 安全**：用环境变量 `DEEPSEEK_API_KEY`，绝不写进代码/git。
+- **Key 安全**：官方通道用环境变量 `DEEPSEEK_API_KEY`，绝不写进代码/git；magpie 网关走本机路由，不落 Key。
 - **OCR 界面噪声**：截图里的工具栏/菜单词会被整段抓入，可后处理过滤，但保留原文更安全。
 - **本地小 VLM 不可行**（无独显单帧 110s+）；云端 Vision 快且准。

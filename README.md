@@ -24,7 +24,7 @@
 | PDF / Word | `pip install pypdf python-docx` |
 | 图片文字 | `pip install rapidocr-onnxruntime` |
 | 视频语音 | `pip install faster-whisper` + `ffmpeg` |
-| 图片/视频画面理解 | 上面几项 + `DEEPSEEK_API_KEY` |
+| 图片/视频画面理解 | 上面几项 + 本机 magpie 网关（推荐，无需 Key）或 `DEEPSEEK_API_KEY` |
 
 不确定现在能跑什么：`python tools/check-env.py`（纯标准库，先跑再装）。缺的能力只影响对应媒体，不会让流程失败。
 
@@ -133,11 +133,13 @@ AI 出提案，你按确认键。判据：**这个动作错了，撤得回来吗
 
 ### 环境变量
 
-三个键可选，缺了只影响对应能力，不影响图文主线。**本仓不自动加载 `.env`**——用 shell 注入（`export`，或 Windows 的 `setx` 后重开终端）。
+下面几个键都可选，缺了只影响对应能力，不影响图文主线。**本仓不自动加载 `.env`**——用 shell 注入（`export`，或 Windows 的 `setx` 后重开终端）。
 
 | 键 | 谁读 | 什么时候需要 |
 |---|---|---|
-| `DEEPSEEK_API_KEY` | `tools/ds_vision.py` | 图片 / 视频画面语义理解 |
+| `MAGPIE_BASE_URL` | `tools/ds_vision.py`、`check-env.py` | 本机 magpie 网关地址，默认 `http://127.0.0.1:3425/v1` |
+| `MAGPIE_VISION_MODEL` | `tools/ds_vision.py` | 网关上的视觉模型，默认 `open-design/deepseek-v4-flash-vision-exp` |
+| `DEEPSEEK_API_KEY` | `tools/ds_vision.py` | 没有 magpie 网关时，走官方 API 做画面语义 |
 | `OCR_PYTHON` | `tools/extract-image-ocr.py`、`extract-video-frames.py` | RapidOCR 装在独立解释器里时 |
 | `GITHUB_TOKEN` | `tools/check_vendor.py --online` | 未装 `gh` 时避免匿名限流（403） |
 

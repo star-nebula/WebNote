@@ -24,7 +24,7 @@ The core value is the **workflow design and the step contracts**, not the Python
 | PDF / Word | `pip install pypdf python-docx` |
 | Text inside images | `pip install rapidocr-onnxruntime` |
 | Video / audio speech | `pip install faster-whisper` + `ffmpeg` |
-| Image / video understanding | the above + `DEEPSEEK_API_KEY` |
+| Image / video understanding | the above + a local magpie gateway (recommended, no key) or `DEEPSEEK_API_KEY` |
 
 Not sure what your machine can do: `python tools/check-env.py` (standard library only, run it before installing anything). Missing capabilities only affect their own media type.
 
@@ -133,11 +133,13 @@ The AI produces a proposal; you press the key. The test: **if this action is wro
 
 ### Environment variables
 
-Three optional keys; missing ones only disable their own media type. **This repo does not load `.env`** — inject them through the shell (`export`, or `setx` on Windows then reopen the terminal).
+All optional; missing ones only disable their own media type. **This repo does not load `.env`** — inject them through the shell (`export`, or `setx` on Windows then reopen the terminal).
 
 | Key | Read by | Needed when |
 |---|---|---|
-| `DEEPSEEK_API_KEY` | `tools/ds_vision.py` | Image / video frame understanding |
+| `MAGPIE_BASE_URL` | `tools/ds_vision.py`, `check-env.py` | Local magpie gateway address, default `http://127.0.0.1:3425/v1` |
+| `MAGPIE_VISION_MODEL` | `tools/ds_vision.py` | Vision model on the gateway, default `open-design/deepseek-v4-flash-vision-exp` |
+| `DEEPSEEK_API_KEY` | `tools/ds_vision.py` | No magpie gateway: call the official API for frame understanding |
 | `OCR_PYTHON` | `tools/extract-image-ocr.py`, `extract-video-frames.py` | RapidOCR installed in a separate interpreter |
 | `GITHUB_TOKEN` | `tools/check_vendor.py --online` | No `gh` installed, to avoid anonymous rate limits (403) |
 

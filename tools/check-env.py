@@ -38,8 +38,8 @@ CAPABILITIES = [
      "可选。daemon 无浏览器时 extract-webpage.py 自动改走静态抓取"),
     ("图片 OCR 逐字文字", "module", ["rapidocr_onnxruntime"],
      "pip install rapidocr-onnxruntime"),
-    ("图片 / 视频画面语义", "env", "DEEPSEEK_API_KEY",
-     'export DEEPSEEK_API_KEY="sk-xxx"（仅画面理解需要）'),
+    ("图片 / 视频画面语义", "vision", None,
+     "启动 magpie 网关（默认 127.0.0.1:3425），或 export DEEPSEEK_API_KEY=sk-xxx"),
     ("视频语音 ASR 转写", "module", ["faster_whisper"],
      "pip install faster-whisper"),
     ("视频下载 / 抽帧", "cli", "ffmpeg",
@@ -91,6 +91,24 @@ def check_browser_skill():
     return "需配置", "daemon 没连上浏览器（需要在有 browser-skill 扩展的浏览器里连）"
 
 
+def check_vision_channel():
+    """magpie 网关上有视觉模型，或有官方 Key，都算可用。"""
+    if os.environ.get("DEEPSEEK_API_KEY"):
+        return "可用", ""
+    base = os.environ.get("MAGPIE_BASE_URL", "http://127.0.0.1:3425/v1").rstrip("/")
+    try:
+        req = urllib.request.Request(
+            base + "/models", headers={"Authorization": "Bearer magpie"})
+        with urllib.request.urlopen(req, timeout=3) as r:
+            data = json.loads(r.read().decode())
+        ids = [str(m.get("id", "")) for m in data.get("data", [])]
+    except Exception:
+        return "需配置", "magpie 网关没在跑（127.0.0.1:3425），也没有 DEEPSEEK_API_KEY"
+    if any("vision" in i.lower() for i in ids):
+        return "可用", ""
+    return "需配置", "网关在线但没有视觉模型（VISION_MODEL / MAGPIE_VISION_MODEL 可覆盖）"
+
+
 def probe():
     """返回 [(能力名, 状态, 提示)]，状态 ∈ 可用 / 需配置 / 缺失"""
     results = []
@@ -106,6 +124,8 @@ def probe():
             state = "可用" if os.environ.get(value) else "需配置"
         elif kind == "browser_skill":
             state, hint = check_browser_skill()
+        elif kind == "vision":
+            state, hint = check_vision_channel()
         elif kind == "web_archive":
             ready, has_shell, has_browser = check_web_archive()
             state = "可用" if ready else "缺失"

@@ -45,8 +45,8 @@
 | `webpage_static.py <URL>` | 静态 HTTP 直取 HTML 剥正文（被 `extract-webpage.py` 调用） | requests, lxml | 秒级 |
 | `extract-video-text.py <URL>` | 通过 BrowserSkill 读取视频页面文本 | bsk CLI | 秒级 |
 | `extract-video-asr.py <URL\|--input 本地文件> [--model small\|large-v3-turbo] [--max-duration N]` | 下载视频音频（或读本地文件）并用 ASR 转写语音 | yt-dlp, faster-whisper, ffmpeg | 分钟级 |
-| `extract-video-frames.py --input <本地视频> [--t-start S] [--t-end S] [--max-frames N]` | **视频画面采集**：抽帧 + 本地 RapidOCR 取逐字文字 + 云端 DeepSeek Vision 理解画面语义，按时间戳对齐 | ffmpeg, rapidocr-onnxruntime, DEEPSEEK_API_KEY | 分钟级 |
-| `ds_vision.py <图片...> [--times ...]` | 单批图片送 DeepSeek Vision 理解（被 extract-video-frames 内部调用，每 14 帧一批） | DEEPSEEK_API_KEY | 秒级 |
+| `extract-video-frames.py --input <本地视频> [--t-start S] [--t-end S] [--max-frames N]` | **视频画面采集**：抽帧 + 本地 RapidOCR 取逐字文字 + 云端 DeepSeek Vision 理解画面语义，按时间戳对齐 | ffmpeg, rapidocr-onnxruntime, magpie 网关或 DEEPSEEK_API_KEY | 分钟级 |
+| `ds_vision.py <图片...> [--times ...] [--provider auto\|magpie\|deepseek]` | 单批图片送视觉模型理解（被 extract-video-frames 内部调用，每 14 帧一批）；默认走本机 magpie 网关 | magpie 网关或 DEEPSEEK_API_KEY | 秒级 |
 | `extract-image-ocr.py --input <目录\|JSON>` | 对图片做本地 OCR（RapidOCR，与视频画面采集统一后端） | rapidocr-onnxruntime | 秒~分钟级 |
 
 ## 自检与维护
@@ -130,8 +130,8 @@ ffmpeg 抽帧（场景变化 + 每5秒定时兜底）
 **用法**：
 
 ```bash
-# 环境变量提供 Key（绝不写进代码/git）
-export DEEPSEEK_API_KEY="sk-xxx"
+# 画面语义默认走本机 magpie 网关，无需 Key；网关不可用时才用官方通道
+# export DEEPSEEK_API_KEY="sk-xxx"
 
 # 对视频 125s-325s 段做画面采集
 python extract-video-frames.py --input video.mp4 --t-start 125 --t-end 325

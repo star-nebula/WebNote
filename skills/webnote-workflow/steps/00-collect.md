@@ -95,7 +95,7 @@ format_needles:
 - 通过 `bsk`（BrowserSkill）操作**用户已登录的浏览器**读取页面，不发起未经认证的 HTTP 请求
 - 只提取已有文本，不生成、不总结、不补充
 - 提取失败如实标「无法提取」，不硬凑
-- `DEEPSEEK_API_KEY` 只走环境变量，不进代码、不进 git
+- 视觉通道优先本机 magpie 网关；只有官方通道用 `DEEPSEEK_API_KEY`，只走环境变量，不进代码、不进 git
 - 原文**只读**，不复制、不移动
 
 ## 输出 → `runs/<run>/00-采编清单.md`

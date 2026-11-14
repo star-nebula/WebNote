@@ -1,6 +1,6 @@
 ---
 name: video-extract
-description: 从视频中提取"内容"（页面文本 + 语音 ASR + 画面语义/文字）。当用户提供视频（本地文件或链接），需要"视频讲了什么 + 画面上的文字/界面"时使用。链路：extract-video-text(页面文本) → extract-video-asr(语音) → extract-video-frames(抽帧 + RapidOCR 文字 + DeepSeek Vision 语义)。依赖：ffmpeg、faster-whisper、RapidOCR、DEEPSEEK_API_KEY。
+description: 从视频中提取"内容"（页面文本 + 语音 ASR + 画面语义/文字）。当用户提供视频（本地文件或链接），需要"视频讲了什么 + 画面上的文字/界面"时使用。链路：extract-video-text(页面文本) → extract-video-asr(语音) → extract-video-frames(抽帧 + RapidOCR 文字 + DeepSeek Vision 语义)。依赖：ffmpeg、faster-whisper、RapidOCR；画面语义走本机 magpie 网关，或 DEEPSEEK_API_KEY。
 agent_created: true
 ---
 
@@ -27,8 +27,8 @@ agent_created: true
 ## 直接用内置工具
 
 ```bash
-# 前置（画面语义需 Key；ASR 语音与 OCR 文字纯本地）
-export DEEPSEEK_API_KEY="sk-xxx"
+# 前置：画面语义默认走本机 magpie 网关（无需 Key）；ASR 语音与 OCR 文字纯本地
+# 网关不可用时才用官方通道：export DEEPSEEK_API_KEY="sk-xxx"
 
 # 1) 页面文本（若有 URL）：extract-video-text.py <URL>
 # 2) 语音转写（本地视频或 URL）：
@@ -58,6 +58,6 @@ python tools/extract-video-frames.py --input video.mp4 \
 ## 经验与坑
 
 - **时间戳**：抽帧带 `-ss t_start` 后帧时间是相对值，工具已修正为绝对视频时间。
-- **Key 安全**：用环境变量 `DEEPSEEK_API_KEY`，绝不进代码/git。
+- **Key 安全**：官方通道用环境变量 `DEEPSEEK_API_KEY`，绝不进代码/git；magpie 网关走本机路由，不落 Key。
 - **OCR 界面噪声**：WPS 工具栏等菜单词会被整段抓入，可后处理过滤。
 - **本地小 VLM 不可行**（无独显单帧 110s+）；云端 Vision 快 ~100 倍且更准。

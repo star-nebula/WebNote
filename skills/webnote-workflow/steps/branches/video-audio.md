@@ -40,7 +40,7 @@ python tools/extract-video-frames.py --input <本地视频> \
 
 链路：`ffmpeg` 抽帧（5s 周期 + 场景帧）→ `RapidOCR` 逐帧文字 → `ds_vision.py` 每 14 帧一批语义 → 按时间戳对齐。
 
-依赖：`ffmpeg`、`rapidocr-onnxruntime`、`DEEPSEEK_API_KEY`。
+依赖：`ffmpeg`、`rapidocr-onnxruntime`；画面语义走本机 magpie 网关或 `DEEPSEEK_API_KEY`。
 
 ## 触发规则（重要）
 
