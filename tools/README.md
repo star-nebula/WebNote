@@ -57,6 +57,7 @@
 | `check-links.py` | 全仓 Markdown 相对链接 | 无 | 是 |
 | `check_vendor.py [--online]` | 外部技能副本是否还是上游那份 | `gh` 或 `GITHUB_TOKEN`（仅 --online） | 是（离线） |
 | `validate_run.py [--all\|runs/<run>/]` | 一份 run 的四份产物是否自洽：条数、条目号连续、三态与来源类型组合、提案是否把每条都归了节 | 无 | 是（CI 里没有 runs/，秒过） |
+| `archive-runs.py --dest <目录> [--days 30] [--dry-run]` | 把过期的 run 目录移到指定的中央产物库（`--dest` 必填，如 `E:\data\openmausbot\artifacts\<bot-slug>\<YYYY-MM>\`；工具不猜路径） | 无 | 否 |
 
 两个纯函数模块，被工具和测试共同引用，不要各写一份：
 
