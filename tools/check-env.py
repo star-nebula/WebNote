@@ -16,6 +16,11 @@ import json
 import os
 import shutil
 import sys
+import urllib.request
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from proc import run_to_file  # noqa: E402  同目录工具：命令输出写文件，避免管道卡死
 
 if hasattr(sys.stdout, "reconfigure"):
     try:
@@ -27,8 +32,8 @@ if hasattr(sys.stdout, "reconfigure"):
 CAPABILITIES = [
     ("PDF / DOCX 文档提取", "module", ["pypdf", "docx"],
      "pip install pypdf python-docx"),
-    ("网页正文提取（BrowserSkill）", "cli", "bsk",
-     "可选。或改用剪藏工具 / 手动复制粘贴正文"),
+    ("网页正文提取（BrowserSkill 浏览器）", "browser_skill", None,
+     "可选。daemon 无浏览器时 extract-webpage.py 自动改走静态抓取"),
     ("图片 OCR 逐字文字", "module", ["rapidocr_onnxruntime"],
      "pip install rapidocr-onnxruntime"),
     ("图片 / 视频画面语义", "env", "DEEPSEEK_API_KEY",
@@ -61,6 +66,29 @@ def check_web_archive():
     return bool(shell and browsers), bool(shell), bool(browsers)
 
 
+def check_browser_skill():
+    """bsk 装没装、daemon 有没有真的连上浏览器。
+
+    只看可执行文件在不在会误报「可用」——2026-11-13 实测 bsk 在 PATH 上，
+    但 `bsk browsers` 返回空，采集必然失败。
+    """
+    if shutil.which("bsk") is None:
+        return "缺失", "装 BrowserSkill 后确认 `bsk --version` 能跑"
+    try:
+        code, stdout = run_to_file(["bsk", "browsers", "--json"], timeout=8)
+    except OSError:
+        return "需配置", "bsk 无法执行；直接走静态兜底即可"
+    if code is None:
+        return "需配置", "bsk daemon 无响应；直接走静态兜底即可"
+    try:
+        browsers = json.loads(stdout.strip() or "[]")
+    except json.JSONDecodeError:
+        browsers = None
+    if isinstance(browsers, list) and browsers:
+        return "可用", ""
+    return "需配置", "daemon 没连上浏览器（需要在有 browser-skill 扩展的浏览器里连）"
+
+
 def probe():
     """返回 [(能力名, 状态, 提示)]，状态 ∈ 可用 / 需配置 / 缺失"""
     results = []
@@ -74,6 +102,8 @@ def probe():
             state = "可用" if shutil.which(value) else "缺失"
         elif kind == "env":
             state = "可用" if os.environ.get(value) else "需配置"
+        elif kind == "browser_skill":
+            state, hint = check_browser_skill()
         elif kind == "web_archive":
             ready, has_shell, has_browser = check_web_archive()
             state = "可用" if ready else "缺失"
