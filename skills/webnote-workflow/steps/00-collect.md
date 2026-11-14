@@ -53,7 +53,7 @@ format_needles:
 | 判断结果 | 处理方式 | 分支卡 |
 |---|---|---|
 | 图文（已有正文） | 直接使用，不调工具 | — |
-| 图文（正文为空） | `extract-webpage.py <URL>`（走 `bsk`，需在 PATH 上） | — |
+| 图文（正文为空） | `extract-webpage.py <URL>`（bsk 优先，失败自动走静态 HTTP） | — |
 | 文档 | `extract-document.py <文件路径>` | — |
 | 图片 | OCR →（可选）Vision | [branches/image.md](branches/image.md) |
 | 视频 / 音频 | 页面文本 → ASR → 画面 | [branches/video-audio.md](branches/video-audio.md) |
@@ -85,7 +85,7 @@ format_needles:
 统一 JSON 到 stdout，取 `text` 字段：
 
 ```json
-{"success": true, "text": "...", "char_count": 1234, "method": "pypdf|bsk-webpage|bsk-video|faster-whisper-small|video-frames-rapid+ds-vision", "error": null}
+{"success": true, "text": "...", "char_count": 1234, "method": "pypdf|bsk-webpage|static-http|bsk-video|faster-whisper-small|video-frames-rapid+ds-vision", "error": null}
 ```
 
 `extract-video-frames.py` 另输出 `per_frame[]`（每帧 `file / t / ocr_text / vision_text`）。

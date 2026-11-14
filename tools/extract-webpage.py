@@ -1,19 +1,28 @@
 #!/usr/bin/env python3
 """
-Agent 0 · 采编 — 网页文本提取工具（通过 BrowserSkill）
+Agent 0 · 采编 — 网页文本提取（bsk 优先，静态 HTTP 兜底）
 
-通过 bsk CLI 操控浏览器读取图文页面的可见文本，输出 JSON 到 stdout。
+先用 BrowserSkill（bsk）读浏览器里的可见文本；bsk 不可用、daemon 没连上
+浏览器、或取回空正文时，自动改用 HTTP 直取 HTML 剥正文（webpage_static.py）。
+两条路都不行就如实报错，不补写、不猜。
 
 用法：
-  python extract-webpage.py <URL>
+  python extract-webpage.py <URL> [--engine auto|browser|static] [--timeout 25]
 
-依赖：bsk CLI（已安装）
+依赖：bsk CLI（可选）、requests + lxml（静态兜底）
 """
 
+import argparse
 import json
+import os
 import shutil
-import subprocess
 import sys
+
+# 同目录模块：直接执行、被 runpy 载入、被别的工具调用时都能找到
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from proc import run_to_file
+from webpage_static import fetch_and_extract
 
 
 # 单行压缩的 JS（提取页面可见文本）
@@ -34,73 +43,48 @@ EXTRACT_VISIBLE_TEXT_JS = (
 )
 
 
-def run_bsk(args, timeout=30):
-    """运行 bsk 命令，返回 stdout"""
+def run_bsk(args, timeout=15):
+    """运行 bsk 命令，返回 (stdout, 退出码)。
+
+    走 run_to_file 而不是 capture_output=True：bsk 会顺手拉起常驻的
+    `bsk daemon start`，daemon 继承了管道句柄，超时只杀得掉 bsk.exe、
+    等管道关闭却永远等不到——timeout 形同虚设（2026-11-14 实测 8 秒卡成 3 分钟以上）。
+    写临时文件后，超时到点就返回，退出码记 -1。
+    """
     try:
-        result = subprocess.run(
-            ['bsk'] + args,
-            capture_output=True, text=True, timeout=timeout
-        )
-        return result.stdout.strip(), result.returncode
-    except subprocess.TimeoutExpired:
-        return '', -1
-    except FileNotFoundError:
+        code, stdout = run_to_file(['bsk'] + args, timeout=timeout)
+    except OSError:
         return '', -2
+    if code is None:
+        return '', -1
+    return stdout.strip(), code
 
 
-def main():
-    if len(sys.argv) < 2:
-        output = {
-            'success': False, 'text': '', 'char_count': 0,
-            'method': 'error', 'error': '用法: python extract-webpage.py <URL>'
-        }
-        print(json.dumps(output, ensure_ascii=False))
-        sys.exit(1)
+def fail(message):
+    return {
+        'success': False, 'text': '', 'char_count': 0,
+        'method': 'error', 'error': message,
+    }
 
-    url = sys.argv[1]
 
+def bsk_extract(url):
+    """走 BrowserSkill 取可见文本。返回五键 dict。"""
     if shutil.which('bsk') is None:
-        print(json.dumps({
-            'success': False, 'text': '', 'char_count': 0, 'method': 'error',
-            'error': (
-                '找不到 bsk：BrowserSkill 未安装或未加入 PATH。\n'
-                '装好后确认 `bsk --version` 能跑；命令速查用 `bsk --help`；'
-                '说明副本见 skills/browser-skill/SKILL.md。'
-            ),
-        }, ensure_ascii=False))
-        sys.exit(2)
+        return fail('找不到 bsk：BrowserSkill 未安装或未加入 PATH')
 
     # 1. 创建会话
-    stdout, rc = run_bsk(['session', 'start'])
-    if rc != 0:
-        output = {
-            'success': False, 'text': '', 'char_count': 0,
-            'method': 'error',
-            'error': f'bsk session start 失败: bsk 未安装或 daemon 未运行'
-        }
-        print(json.dumps(output, ensure_ascii=False))
-        sys.exit(1)
+    stdout, rc = run_bsk(['session', 'start'], timeout=10)
+    if rc != 0 or not stdout.strip():
+        detail = stdout[:160] if stdout else '浏览器扩展未连接'
+        return fail(f'bsk session start 失败: {detail}')
 
     session_id = stdout.strip()
-    if not session_id:
-        output = {
-            'success': False, 'text': '', 'char_count': 0,
-            'method': 'error', 'error': 'bsk 未返回 session ID'
-        }
-        print(json.dumps(output, ensure_ascii=False))
-        sys.exit(1)
-
     try:
         # 2. 导航
         stdout, rc = run_bsk(['navigate', '--session', session_id, url])
         if rc != 0:
-            output = {
-                'success': False, 'text': '', 'char_count': 0,
-                'method': 'error',
-                'error': f'导航失败: {stdout[:200] if stdout else "浏览器扩展未连接"}'
-            }
-            print(json.dumps(output, ensure_ascii=False))
-            return
+            detail = stdout[:200] if stdout else '浏览器扩展未连接'
+            return fail(f'导航失败: {detail}')
 
         # 3. 等待页面加载
         run_bsk(['wait-ms', '3000'])
@@ -110,29 +94,22 @@ def main():
             ['evaluate', '--session', session_id, '--json', EXTRACT_VISIBLE_TEXT_JS],
             timeout=30
         )
-
         if rc != 0 or not stdout:
-            output = {
-                'success': False, 'text': '', 'char_count': 0,
-                'method': 'error',
-                'error': f'JS evaluate 失败 ({rc}): {stdout[:200] if stdout else "浏览器扩展可能未连接"}'
-            }
-            print(json.dumps(output, ensure_ascii=False))
-            return
+            detail = stdout[:200] if stdout else '浏览器扩展可能未连接'
+            return fail(f'JS evaluate 失败 ({rc}): {detail}')
 
         # 5. 解析 JSON（bsk --json 可能包裹输出）
         try:
             data = json.loads(stdout)
         except json.JSONDecodeError:
-            output = {
-                'success': True, 'text': stdout, 'char_count': len(stdout.replace('\n', '')),
-                'method': 'bsk-webpage-raw', 'error': None
+            text = stdout
+            return {
+                'success': True, 'text': text,
+                'char_count': len(text.replace('\n', '')),
+                'method': 'bsk-webpage-raw', 'error': None,
             }
-            print(json.dumps(output, ensure_ascii=False))
-            return
 
         # bsk --json 输出格式: {"ok": true, "tab_id": ..., "value": "..."}
-        # value 可能是 JSON 字符串（需要二次解析），也可能是普通字符串
         raw = None
         if isinstance(data, dict) and 'value' in data:
             raw = data['value']
@@ -141,14 +118,10 @@ def main():
         else:
             raw = stdout
 
-        # 尝试二次解析（value 是 JSON 字符串的情况）
         if isinstance(raw, str):
             try:
                 parsed = json.loads(raw)
-                if isinstance(parsed, dict):
-                    data = parsed
-                else:
-                    data = raw
+                data = parsed if isinstance(parsed, dict) else raw
             except (json.JSONDecodeError, TypeError):
                 data = raw
         else:
@@ -163,20 +136,40 @@ def main():
                 char_count = len(text.replace('\n', ''))
 
         if char_count > 0:
-            output = {
+            return {
                 'success': True, 'text': text, 'char_count': char_count,
-                'method': 'bsk-webpage', 'error': None
+                'method': 'bsk-webpage', 'error': None,
             }
-        else:
-            output = {
-                'success': False, 'text': '', 'char_count': 0,
-                'method': 'error', 'error': '页面未提取到可见文本'
-            }
-
-        print(json.dumps(output, ensure_ascii=False))
-
+        return fail('页面未提取到可见文本')
     finally:
         run_bsk(['session', 'stop', '--session', session_id], timeout=10)
+
+
+def main():
+    ap = argparse.ArgumentParser(description='网页正文提取（bsk 优先，静态 HTTP 兜底）')
+    ap.add_argument('url')
+    ap.add_argument('--engine', default='auto', choices=['auto', 'browser', 'static'],
+                    help='auto=先 bsk 后静态（默认）；browser=只走 bsk；static=只走 HTTP')
+    ap.add_argument('--timeout', type=int, default=25, help='静态兜底的 HTTP 超时秒数')
+    args = ap.parse_args()
+
+    if args.engine == 'static':
+        print(json.dumps(fetch_and_extract(args.url, args.timeout), ensure_ascii=False))
+        return
+
+    browser = bsk_extract(args.url)
+    if browser['success'] or args.engine == 'browser':
+        print(json.dumps(browser, ensure_ascii=False))
+        return
+
+    static = fetch_and_extract(args.url, args.timeout)
+    if static['success']:
+        print(json.dumps(static, ensure_ascii=False))
+        return
+
+    print(json.dumps(fail(
+        f"浏览器采集失败（{browser['error']}）；静态兜底也失败（{static['error']}）"
+    ), ensure_ascii=False))
 
 
 if __name__ == '__main__':

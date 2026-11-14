@@ -2,3 +2,7 @@
 # CI 用它做缓存 key：改了这里才重新装依赖
 pytest>=8,<9
 PyYAML>=6,<7
+# tests/test_webpage_static.py 直接 import tools/webpage_static.py，它 import 这两个；
+# 缺 lxml 时 5 条断言全红——这是 CI 变红的真原因，不是本地环境差异
+requests>=2,<3
+lxml>=5,<7

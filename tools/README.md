@@ -19,7 +19,7 @@
   "success": true,
   "text": "提取到的文本内容...",
   "char_count": 1234,
-  "method": "pypdf / python-docx / bsk-webpage / bsk-video / faster-whisper-small / error",
+  "method": "pypdf / python-docx / bsk-webpage / static-http / bsk-video / faster-whisper-small / error",
   "error": null
 }
 ```
@@ -41,7 +41,8 @@
 | 工具 | 用途 | 依赖 | 速度 |
 |------|------|------|------|
 | `extract-document.py <文件路径>` | 从 PDF/DOCX 提取文本 | pypdf, python-docx | 秒级 |
-| `extract-webpage.py <URL>` | 通过 BrowserSkill 读取图文页面 | bsk CLI | 秒级 |
+| `extract-webpage.py <URL> [--engine auto\|browser\|static]` | 取图文页面正文：bsk 优先，失败自动走静态 HTTP | bsk CLI（可选）, requests, lxml | 秒级 |
+| `webpage_static.py <URL>` | 静态 HTTP 直取 HTML 剥正文（被 `extract-webpage.py` 调用） | requests, lxml | 秒级 |
 | `extract-video-text.py <URL>` | 通过 BrowserSkill 读取视频页面文本 | bsk CLI | 秒级 |
 | `extract-video-asr.py <URL\|--input 本地文件> [--model small\|large-v3-turbo] [--max-duration N]` | 下载视频音频（或读本地文件）并用 ASR 转写语音 | yt-dlp, faster-whisper, ffmpeg | 分钟级 |
 | `extract-video-frames.py --input <本地视频> [--t-start S] [--t-end S] [--max-frames N]` | **视频画面采集**：抽帧 + 本地 RapidOCR 取逐字文字 + 云端 DeepSeek Vision 理解画面语义，按时间戳对齐 | ffmpeg, rapidocr-onnxruntime, DEEPSEEK_API_KEY | 分钟级 |

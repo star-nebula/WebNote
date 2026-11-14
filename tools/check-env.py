@@ -32,6 +32,8 @@ if hasattr(sys.stdout, "reconfigure"):
 CAPABILITIES = [
     ("PDF / DOCX 文档提取", "module", ["pypdf", "docx"],
      "pip install pypdf python-docx"),
+    ("网页正文提取（静态兜底）", "module", ["requests", "lxml"],
+     "pip install requests lxml"),
     ("网页正文提取（BrowserSkill 浏览器）", "browser_skill", None,
      "可选。daemon 无浏览器时 extract-webpage.py 自动改走静态抓取"),
     ("图片 OCR 逐字文字", "module", ["rapidocr_onnxruntime"],
