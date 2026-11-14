@@ -44,7 +44,7 @@ def test_cross_drive_degrades_to_basename(monkeypatch):
         raise ValueError("path is on mount 'D:', start on mount 'E:'")
 
     monkeypatch.setattr(os.path, "relpath", boom)
-    assert S.safe_relpath("D:/imgs/one.png", "E:/Projects/bots/WebNote") == "one.png"
+    assert S.safe_relpath("D:/imgs/one.png", "E:/Projects/personal/WebNote") == "one.png"
 
 
 def test_production_tool_uses_the_shared_helper():
