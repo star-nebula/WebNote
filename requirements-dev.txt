@@ -6,3 +6,6 @@ PyYAML>=6,<7
 # 缺 lxml 时 5 条断言全红——这是 CI 变红的真原因，不是本地环境差异
 requests>=2,<3
 lxml>=5,<7
+# tests/test_extract_document.py 用 importorskip("pypdf") 护着整份文件：
+# 缺 pypdf 时不是报错，是整文件静默跳过——那 2 条 PDF 用例在 CI 里从未跑过
+pypdf>=4,<7

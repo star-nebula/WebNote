@@ -48,7 +48,10 @@ def main():
     root = root.resolve()
 
     # 跳过私有记忆目录（不属于开源发布内容，且内部文件名引用随时会过时）
-    SKIP_DIRS = {".git", "__pycache__", ".workbuddy", ".memory", "runs", ".claude", ".github", "node_modules", "site-packages"}
+    # .claude/ 与 .agents/ 都是 skills/ 的本机镜像（junction，已被 .gitignore 忽略）：
+    # 同一个 SKILL.md 在这里深一层，相对链接的 ../.. 就少落一层，必然误报断链。
+    # 真身 skills/<name>/SKILL.md 照常扫描，镜像不重复扫。
+    SKIP_DIRS = {".git", "__pycache__", ".workbuddy", ".memory", "runs", ".claude", ".agents", ".github", "node_modules", "site-packages"}
     md_files = sorted(
         p for p in root.rglob("*.md")
         if not (SKIP_DIRS & set(p.parts)) and not any(part.startswith(".venv") for part in p.parts)
